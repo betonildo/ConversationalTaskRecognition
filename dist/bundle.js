@@ -54,7 +54,7 @@
 	var ph2 = "Estou bem cansado.";
 	var sim = j.similarity(ph1, ph2);
 	console.log(sim);
-	ReactDOM.render(React.createElement(Hello_1.Hello, {compiler: "TypeScript", framework: "React"}), document.getElementById("example"));
+	ReactDOM.render(React.createElement(Hello_1.Hello, {compiler: "TypeScript2", framework: "React"}), document.getElementById("example"));
 
 
 /***/ },

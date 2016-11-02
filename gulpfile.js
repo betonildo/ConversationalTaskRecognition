@@ -10,18 +10,6 @@ gulp.task('js', function () {
         .pipe(gulp.dest(''));
 });
 
-gulp.task('tsx', function () {
-    return gulp.src('dist/*js')
-        .pipe(webpack( webpackConfig ))
-        .pipe(gulp.dest(''));
-});
-
-gulp.task('ts', function () {
-    return gulp.src('dist/*js')
-        .pipe(webpack( webpackConfig ))
-        .pipe(gulp.dest(''));
-});
-
 // create a task that ensures the `js` task is complete before
 // reloading browsers
 gulp.task('js-watch', ['js'], function (done) {
@@ -30,7 +18,7 @@ gulp.task('js-watch', ['js'], function (done) {
     done();
 });
 
-gulp.task('ts-watch', ['ts','tsx'], function(done) {
+gulp.task('ts-watch', ['js'], function(done) {
     webpack( webpackConfig );
     done();
 });
@@ -47,5 +35,5 @@ gulp.task('serve', ['js'], function () {
 
     // add browserSync.reload to the tasks array to make
     // all browsers reload after tasks are complete.
-    gulp.watch("src/*.ts*", ['js-watch', 'ts-watch']);
+    gulp.watch("src/*.ts*", ['ts-watch', 'js-watch']);
 });
