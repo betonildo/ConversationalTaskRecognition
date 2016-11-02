@@ -54,7 +54,7 @@
 	var ph2 = "Estou bem cansado.";
 	var sim = j.similarity(ph1, ph2);
 	console.log(sim);
-	ReactDOM.render(React.createElement(Hello_1.Hello, {compiler: "TypeScript2", framework: "React"}), document.getElementById("example"));
+	ReactDOM.render(React.createElement(Hello_1.Hello, {compiler: "TypeScript", framework: "React"}), document.getElementById("example"));
 
 
 /***/ },
@@ -86,12 +86,16 @@
 	        _super.apply(this, arguments);
 	    }
 	    Hello.prototype.render = function () {
-	        return React.createElement("h1", null, 
-	            "Hello from ", 
-	            this.props.compiler, 
-	            " and ", 
-	            this.props.framework, 
-	            "!");
+	        return (React.createElement("div", null, 
+	            React.createElement("h1", null, 
+	                "Hello from ", 
+	                this.props.compiler, 
+	                " and ", 
+	                this.props.framework, 
+	                "!"), 
+	            React.createElement("p", null, "Testing!"), 
+	            "Name: ", 
+	            React.createElement("input", {type: "text"})));
 	    };
 	    return Hello;
 	}(React.Component));

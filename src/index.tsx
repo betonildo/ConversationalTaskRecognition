@@ -12,6 +12,6 @@ let sim = j.similarity(ph1, ph2);
 console.log(sim);
 
 ReactDOM.render(
-    <Hello compiler="TypeScript2" framework="React" />,
+    <Hello compiler="TypeScript" framework="React" />,
     document.getElementById("example")
 );

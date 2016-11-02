@@ -12,14 +12,9 @@ gulp.task('js', function () {
 
 // create a task that ensures the `js` task is complete before
 // reloading browsers
-gulp.task('js-watch', ['js'], function (done) {
-    
-    browserSync.reload();
-    done();
-});
-
-gulp.task('ts-watch', ['js'], function(done) {
+gulp.task('ts-watch', ['js'], function (done) {
     webpack( webpackConfig );
+    browserSync.reload();
     done();
 });
 
@@ -35,5 +30,5 @@ gulp.task('serve', ['js'], function () {
 
     // add browserSync.reload to the tasks array to make
     // all browsers reload after tasks are complete.
-    gulp.watch("src/*.ts*", ['ts-watch', 'js-watch']);
+    gulp.watch(["src/*.ts*", "src/**/*.ts*"], ['ts-watch']);
 });
