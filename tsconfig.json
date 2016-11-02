@@ -1,13 +1,15 @@
 {
     "compilerOptions": {
+        "outDir": "./dist/",
+        "sourceMap": true,
+        "noImplicitAny": true,
         "module": "commonjs",
-        "target": "es5",
-        "noImplicitAny": false,
-        "sourceMap": false,
-        "types": [
-            "node"
-        ],
-        "outDir": "build/",
-        "rootDir": "src"
-    }
+        "target": "es3",
+        "jsx": "react",
+        "rootDir": "./src/"
+    },
+    "exclude": [
+        "node_modules",
+        "typings"
+    ]
 }

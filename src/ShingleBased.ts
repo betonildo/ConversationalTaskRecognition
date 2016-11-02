@@ -43,13 +43,15 @@ abstract class ShingleBased {
      * @param string
      * @return the profile of this string, as an unmodifiable Map
      */
-    public getProfile(fullString : string) : Map<string,number>{
-        let shingles : Map<string,number> = new Map<string,number>();
+    public getProfile(fullString : string) : Map<number>{
+        
+        let shingles : Map<number> = new Map<number>();
 
         let string_no_space = fullString.replace(ShingleBased.SPACE_REG, " ");
         for (let i = 0; i < (string_no_space.length - this.k + 1); i++) {
-            let shingle = string_no_space.substring(i, i + this.k);            
-            shingles[shingle] = shingles[shingle] ? shingles[shingle] + 1 : 1;
+            let shingle = string_no_space.substring(i, i + this.k);
+            let value = shingles.contains(shingle) ? shingles.getValue(shingle) + 1 : 1;            
+            shingles.setValue(shingle, value);
         }
         
         return shingles;

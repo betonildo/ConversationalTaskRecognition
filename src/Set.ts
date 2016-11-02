@@ -1,12 +1,12 @@
 
-class Set<T> {
-    private hash : Object; 
+class Set {
+    private hash : {[key:string] : boolean}; 
 
     constructor() {
-        this.hash = new Object();
+        this.hash = {};
     }
 
-    public contains(key : any) : boolean{
+    public contains(key : string) : boolean{
         return !!this.hash[key];
     }
 
@@ -22,7 +22,7 @@ class Set<T> {
         delete this.hash[key];
     }
 
-    public forEach(runCallback) {
+    public forEach(runCallback:Function) {
 
         for (let key of Object.keys(this.hash)) {
             runCallback(key);

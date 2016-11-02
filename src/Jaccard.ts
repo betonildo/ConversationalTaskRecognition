@@ -23,17 +23,17 @@ class Jaccard extends ShingleBased{
      * @return
      */
     public similarity(s1 : string, s2 : string) : number{
-        let profile1 : Map<string,number> = this.getProfile(s1);
-        let profile2 : Map<string,number> = this.getProfile(s2);
+        let profile1 : Map<number> = this.getProfile(s1);
+        let profile2 : Map<number> = this.getProfile(s2);
 
-        let union : Set<String> = new Set<String>();
+        let union : Set = new Set();
         union.addAll(profile1.getKeys());
         union.addAll(profile2.getKeys());
 
 
         let inter = 0;
         
-        union.forEach( key => {
+        union.forEach( (key : string) => {
             if (profile1.contains(key) && profile2.contains(key)) {
                 inter++;                
             }
