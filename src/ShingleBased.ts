@@ -1,4 +1,4 @@
-import {Map} from "./Map";
+import Map from "./Map";
 
 abstract class ShingleBased {
 
@@ -59,4 +59,4 @@ abstract class ShingleBased {
 
 }
 
-export {ShingleBased};
+export default ShingleBased;

@@ -1,6 +1,6 @@
-import {Map} from "./Map";
-import {Set} from "./Set";
-import {ShingleBased} from "./ShingleBased";
+import Map from "./Map";
+import Set from "./Set";
+import ShingleBased from "./ShingleBased";
 
 
 class Jaccard extends ShingleBased{
@@ -54,4 +54,4 @@ class Jaccard extends ShingleBased{
     }
 }
 
-export {Jaccard};
+export default Jaccard;

@@ -34,4 +34,4 @@ class Set {
     }
 }
 
-export {Set}
+export default Set;

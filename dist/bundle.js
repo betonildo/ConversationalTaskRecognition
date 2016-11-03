@@ -47,14 +47,8 @@
 	"use strict";
 	var React = __webpack_require__(1);
 	var ReactDOM = __webpack_require__(2);
-	var Hello_1 = __webpack_require__(3);
-	var Jaccard_1 = __webpack_require__(4);
-	var j = new Jaccard_1.Jaccard(1);
-	var ph1 = "Estou cansado pra caramba.";
-	var ph2 = "Estou bem cansado.";
-	var sim = j.similarity(ph1, ph2);
-	console.log(sim);
-	ReactDOM.render(React.createElement(Hello_1.Hello, {compiler: "TypeScript", framework: "React"}), document.getElementById("example"));
+	var Chatbot_1 = __webpack_require__(3);
+	ReactDOM.render(React.createElement(Chatbot_1["default"], {phrase1: "Testando asdasd a similaridade de duas frases.", phrase2: "Testando similaridade de frases"}), document.getElementById("example"));
 
 
 /***/ },
@@ -80,26 +74,30 @@
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
 	var React = __webpack_require__(1);
-	var Hello = (function (_super) {
-	    __extends(Hello, _super);
-	    function Hello() {
+	var Jaccard_1 = __webpack_require__(4);
+	var j = new Jaccard_1.Jaccard(1);
+	var Chatbot = (function (_super) {
+	    __extends(Chatbot, _super);
+	    function Chatbot() {
 	        _super.apply(this, arguments);
 	    }
-	    Hello.prototype.render = function () {
+	    Chatbot.prototype.render = function () {
 	        return (React.createElement("div", null, 
-	            React.createElement("h1", null, 
-	                "Hello from ", 
-	                this.props.compiler, 
-	                " and ", 
-	                this.props.framework, 
-	                "!"), 
-	            React.createElement("p", null, "Testing!"), 
-	            "Name: ", 
-	            React.createElement("input", {type: "text"})));
+	            React.createElement("div", null, 
+	                "Similarity: ", 
+	                j.similarity(this.props.phrase1, this.props.phrase2)), 
+	            React.createElement("div", null, 
+	                "Phrase1: ", 
+	                this.props.phrase1), 
+	            React.createElement("div", null, 
+	                "Phrase2: ", 
+	                this.props.phrase2), 
+	            React.createElement("input", {type: "text", id: "inputElement"})));
 	    };
-	    return Hello;
+	    return Chatbot;
 	}(React.Component));
-	exports.Hello = Hello;
+	exports.__esModule = true;
+	exports["default"] = Chatbot;
 
 
 /***/ },
@@ -136,7 +134,7 @@
 	    Jaccard.prototype.similarity = function (s1, s2) {
 	        var profile1 = this.getProfile(s1);
 	        var profile2 = this.getProfile(s2);
-	        var union = new Set_1.Set();
+	        var union = new Set_1["default"]();
 	        union.addAll(profile1.getKeys());
 	        union.addAll(profile2.getKeys());
 	        var inter = 0;
@@ -157,8 +155,9 @@
 	        return 1.0 - this.similarity(s1, s2);
 	    };
 	    return Jaccard;
-	}(ShingleBased_1.ShingleBased));
-	exports.Jaccard = Jaccard;
+	}(ShingleBased_1["default"]));
+	exports.__esModule = true;
+	exports["default"] = Jaccard;
 
 
 /***/ },
@@ -193,7 +192,8 @@
 	    };
 	    return Set;
 	}());
-	exports.Set = Set;
+	exports.__esModule = true;
+	exports["default"] = Set;
 
 
 /***/ },
@@ -251,7 +251,8 @@
 	    ShingleBased.SPACE_REG = new RegExp(/\s+/);
 	    return ShingleBased;
 	}());
-	exports.ShingleBased = ShingleBased;
+	exports.__esModule = true;
+	exports["default"] = ShingleBased;
 
 
 /***/ },
@@ -277,7 +278,8 @@
 	    };
 	    return Map;
 	}());
-	exports.Map = Map;
+	exports.__esModule = true;
+	exports["default"] = Map;
 
 
 /***/ }

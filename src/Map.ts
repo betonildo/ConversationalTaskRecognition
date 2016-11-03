@@ -23,4 +23,4 @@ class Map<V> {
     }
 }
 
-export {Map};
+export default Map;
