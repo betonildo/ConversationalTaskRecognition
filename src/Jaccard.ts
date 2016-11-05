@@ -12,7 +12,7 @@ class Jaccard extends ShingleBased{
      *
      * @param k
      */
-    constructor(k : number = Jaccard.DEFAULT_K) {
+    constructor(k : number) {
         super(k);
     }
 

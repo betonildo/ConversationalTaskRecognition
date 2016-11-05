@@ -1,7 +1,9 @@
+var BrowserSyncPlugin = require('browser-sync-webpack-plugin');
+
 module.exports = {
     entry: "./src/index.tsx",
     output: {
-        filename: "./dist/bundle.js",
+        filename: "./dist/bundle.js"
     },
 
     // Enable sourcemaps for debugging webpack's output.
@@ -32,4 +34,13 @@ module.exports = {
         "react": "React",
         "react-dom": "ReactDOM"
     },
+    plugins: [
+        new BrowserSyncPlugin({
+            // browse to http://localhost:3000/ during development, 
+            // ./public directory is being served 
+            host: 'localhost',
+            port: 3000,
+            server: { baseDir: ['.'] }
+        })
+    ]
 };

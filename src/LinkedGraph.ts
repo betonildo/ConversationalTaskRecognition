@@ -1,39 +1,33 @@
 import Knot from "./Knot";
-import Edge from "./Edge";
 
 export default class LinkedGraph {
 
     private static SIMILARITY_THRESHOLD = 0.6;
     private static ADDITION_SIMILARITY_THRESHOLD = 0.85;
+    private static errorMessages : string[] = [
+        "I didn't undertood what you want!",
+        "No good command specified!",
+        "Some error occurred on processing your request!"
+    ]
+
 
     private knots : {[key:string] : Knot} = {};
-    private edges : {[key:string] : Edge} = {};
-    private currentKnot : Knot;    
+    private currentKnot : Knot;
+    private rootKnot : Knot;
+    private outStream : Function;
 
     constructor(root:Knot) {
-        this.knots[root.name] = root;
-        this.currentKnot = root;
+        this.rootKnot = this.currentKnot = this.knots[root.name] = root;
     }
 
-    /**
-     * @description Set new knot to this knots
-     */
-    public setKnot(knot:Knot) {
-        this.knots[knot.name] = knot;
-    }
-
-    public tryLinkKnotsUsing(e:Edge) : boolean {
+    public tryLinkKnotsViaWith(origin:Knot, via:string, threshold:number, destiny:Knot) : boolean {
 
         try {
             // set knot to the knots if it not exists
-            let originKnot = this.knots[e.origin.name] = this.knots[e.origin.name] || e.origin;
-            let destinyKnot = this.knots[e.destiny.name] = this.knots[e.destiny.name] || e.destiny;
-            let edge = this.edges[e.via];
-
-            if (edge === null || edge === undefined) {
-                // success
-                this.edges[e.via] = e;
-                return originKnot.tryAddChild(e);
+            let originKnot = this.knots[origin.name] = this.knots[origin.name] || origin;
+            let destinyKnot = this.knots[destiny.name] = this.knots[destiny.name] || destiny;
+            if (originKnot && destinyKnot) {
+                return originKnot.tryAddChildViaWith(via, threshold, destinyKnot);
             }
             else throw new Error("Knots already linked via this edge");
         }
@@ -48,43 +42,53 @@ export default class LinkedGraph {
     /**
      * @description Try to navigate to new knot on the knots
      */
-    public tryNavigateUsing(input : string) : boolean {
-        // let nextChild = this.currentKnot.getChildrenSortedVia(input)[0];
+    public tryNavigateUsing(input:string) : boolean {
 
-        // // add new link from current knot to the most similar if 
-        // // similarity pass the new link to threshold
-        // // train...
-        // if (nextChild.getCurrentSimilarity() >= LinkedGraph.ADDITION_SIMILARITY_THRESHOLD) {
-        //     this.currentKnot.tryAddChild(input, nextChild);
-        // }
-
-        // let realNextChild = nextChild.getCurrentSimilarity() < LinkedGraph.SIMILARITY_THRESHOLD ? this.currentKnot : nextChild;
-
-        // this.currentKnot = realNextChild;
-
-        // return realNextChild;
         try {
-            let possibleTransitionEdges = this.currentKnot.getChildrenSortedVia(input);
-            if (possibleTransitionEdges.length > 0) {
-                let futureEdge = possibleTransitionEdges[0]; // most significant
-                this.currentKnot = futureEdge.destiny;
-                if (futureEdge.command) {
-                    futureEdge.command(input);
+            let possiblesDestinations = this.currentKnot.getChildrenSortedVia(input);
+            if (possiblesDestinations.length > 0) {
+                let futureKnot = possiblesDestinations[0]; // most significant
+
+                // add via new path
+                if (futureKnot.getCurrentSimilarity() > LinkedGraph.ADDITION_SIMILARITY_THRESHOLD) {
+                    let meanThreshold = this.currentKnot.getMeanThreshold();
+                    this.tryLinkKnotsViaWith(this.currentKnot, input, meanThreshold, futureKnot);
                 }
 
-                if (futureEdge.destiny.getCurrentSimilarity() > LinkedGraph.ADDITION_SIMILARITY_THRESHOLD) {
-                    let edge = futureEdge.cloneVia(input);
-                    this.tryLinkKnotsUsing(edge);
+                // keep current state
+                if (!this.currentKnot.equals(futureKnot)){                    
+                    this.currentKnot = futureKnot;
                 }
 
+                // only navigate after assignment!
+                futureKnot.navigateToItWith(input, this, this.outStream);
                 return true;
             }
+            else throw LinkedGraph.getRandonErrorMessage();
         }
         catch(e) {
-
-        }
+            this.sendRequestToOutputStream(e);
+            this.currentKnot.failWith(input, this);
+        }    
 
         return false;
+    }
+
+
+    /**
+     * @description Backtrack
+     */
+    public goToLastKnot() {
+        if (this.currentKnot.hasParent()) {
+            this.currentKnot = this.currentKnot.getParent();
+        }
+    }
+
+    /**
+     * @description Go to root knot
+     */
+    public goToRoot() {
+        this.currentKnot = this.getRoot();
     }
 
     /**
@@ -92,5 +96,36 @@ export default class LinkedGraph {
      */
     public getCurrentKnot() : Knot {
         return this.currentKnot;
+    }
+
+    /**
+     * @description set output stream to use comunicate with outside with internal messages
+     */
+    public setOutputStream(outStream:Function) {
+        this.outStream = outStream;
+    }
+
+    /**
+     * @description Get root knot
+     */
+    private getRoot() : Knot {
+        return this.rootKnot;
+    }
+
+    /**
+     * @description send a request to output stream
+     */
+    private sendRequestToOutputStream(buffer:any) {
+        if (!!this.outStream) {
+            this.outStream(buffer);
+        }
+    }
+
+    /**
+     * @description get some randon error message
+     */
+    private static getRandonErrorMessage() : string {
+        let randMsgIndex = Math.floor(Math.random() * LinkedGraph.errorMessages.length);
+        return LinkedGraph.errorMessages[randMsgIndex];
     }
 }

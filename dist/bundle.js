@@ -45,10 +45,10 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var React = __webpack_require__(1);
-	var ReactDOM = __webpack_require__(2);
-	var Chatbot_1 = __webpack_require__(3);
-	ReactDOM.render(React.createElement(Chatbot_1["default"], {phrase1: "Testando asdasd a similaridade de duas frases.", phrase2: "Testando similaridade de frases"}), document.getElementById("example"));
+	const React = __webpack_require__(1);
+	const ReactDOM = __webpack_require__(2);
+	const Chatbot_1 = __webpack_require__(3);
+	ReactDOM.render(React.createElement(Chatbot_1.default, {conversations: []}), document.getElementById("example"));
 
 
 /***/ },
@@ -68,36 +68,54 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-	};
-	var React = __webpack_require__(1);
-	var Jaccard_1 = __webpack_require__(4);
-	var j = new Jaccard_1.Jaccard(1);
-	var Chatbot = (function (_super) {
-	    __extends(Chatbot, _super);
-	    function Chatbot() {
-	        _super.apply(this, arguments);
+	const React = __webpack_require__(1);
+	const ChatConversation_1 = __webpack_require__(8);
+	const GraphConfig_1 = __webpack_require__(12);
+	class Chatbot extends React.Component {
+	    constructor(props) {
+	        super(props);
+	        this.state = {
+	            conversations: new Array()
+	        };
+	        GraphConfig_1.default.setOutputStream(this.printer.bind(this));
 	    }
-	    Chatbot.prototype.render = function () {
+	    handleOnKeyDown(e) {
+	        if (e.key === 'Enter') {
+	            let who = "Me";
+	            let what = this.inputElement.value;
+	            this.inputElement.value = "";
+	            let c = new ChatConversation_1.default({ who: who, what: what });
+	            let self = this;
+	            this.setState((prevState, props) => {
+	                prevState.conversations.push(c);
+	                return prevState;
+	            });
+	            GraphConfig_1.default.tryNavigateUsing(what);
+	        }
+	    }
+	    printer(input) {
+	        let who = "Watson";
+	        let what = input.toString();
+	        let c = new ChatConversation_1.default({ who: who, what: what });
+	        let self = this;
+	        this.setState((prevState, props) => {
+	            prevState.conversations.push(c);
+	            return prevState;
+	        });
+	    }
+	    componentDidMount() {
+	        this.inputElement = document.getElementById("inputElement");
+	    }
+	    render() {
 	        return (React.createElement("div", null, 
-	            React.createElement("div", null, 
-	                "Similarity: ", 
-	                j.similarity(this.props.phrase1, this.props.phrase2)), 
-	            React.createElement("div", null, 
-	                "Phrase1: ", 
-	                this.props.phrase1), 
-	            React.createElement("div", null, 
-	                "Phrase2: ", 
-	                this.props.phrase2), 
-	            React.createElement("input", {type: "text", id: "inputElement"})));
-	    };
-	    return Chatbot;
-	}(React.Component));
-	exports.__esModule = true;
-	exports["default"] = Chatbot;
+	            React.createElement("ul", null, this.state.conversations.map((c, i) => {
+	                return React.createElement(ChatConversation_1.default, {key: i, who: c.props.who, what: c.props.what});
+	            })), 
+	            React.createElement("input", {type: "text", id: "inputElement", onKeyDown: this.handleOnKeyDown.bind(this)})));
+	    }
+	}
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = Chatbot;
 
 
 /***/ },
@@ -105,15 +123,9 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-	};
-	var Set_1 = __webpack_require__(5);
-	var ShingleBased_1 = __webpack_require__(6);
-	var Jaccard = (function (_super) {
-	    __extends(Jaccard, _super);
+	const Set_1 = __webpack_require__(5);
+	const ShingleBased_1 = __webpack_require__(6);
+	class Jaccard extends ShingleBased_1.default {
 	    /**
 	     * The strings are first transformed into sets of k-shingles (sequences of k
 	     * characters), then Jaccard index is computed as |A inter B| / |A union B|.
@@ -121,9 +133,8 @@
 	     *
 	     * @param k
 	     */
-	    function Jaccard(k) {
-	        if (k === void 0) { k = Jaccard.DEFAULT_K; }
-	        _super.call(this, k);
+	    constructor(k) {
+	        super(k);
 	    }
 	    /**
 	     * Compute jaccard index: |A inter B| / |A union B|.
@@ -131,33 +142,32 @@
 	     * @param s2
 	     * @return
 	     */
-	    Jaccard.prototype.similarity = function (s1, s2) {
-	        var profile1 = this.getProfile(s1);
-	        var profile2 = this.getProfile(s2);
-	        var union = new Set_1["default"]();
+	    similarity(s1, s2) {
+	        let profile1 = this.getProfile(s1);
+	        let profile2 = this.getProfile(s2);
+	        let union = new Set_1.default();
 	        union.addAll(profile1.getKeys());
 	        union.addAll(profile2.getKeys());
-	        var inter = 0;
-	        union.forEach(function (key) {
+	        let inter = 0;
+	        union.forEach((key) => {
 	            if (profile1.contains(key) && profile2.contains(key)) {
 	                inter++;
 	            }
 	        });
 	        return 1.0 * inter / union.size();
-	    };
+	    }
 	    /**
 	     * Distance is computed as 1 - similarity.
 	     * @param s1
 	     * @param s2
 	     * @return
 	     */
-	    Jaccard.prototype.distance = function (s1, s2) {
+	    distance(s1, s2) {
 	        return 1.0 - this.similarity(s1, s2);
-	    };
-	    return Jaccard;
-	}(ShingleBased_1["default"]));
-	exports.__esModule = true;
-	exports["default"] = Jaccard;
+	    }
+	}
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = Jaccard;
 
 
 /***/ },
@@ -165,35 +175,33 @@
 /***/ function(module, exports) {
 
 	"use strict";
-	var Set = (function () {
-	    function Set() {
+	class Set {
+	    constructor() {
 	        this.hash = {};
 	    }
-	    Set.prototype.contains = function (key) {
+	    contains(key) {
 	        return !!this.hash[key];
-	    };
-	    Set.prototype.addAll = function (keys) {
+	    }
+	    addAll(keys) {
 	        keys.forEach(this.add.bind(this));
-	    };
-	    Set.prototype.add = function (key) {
+	    }
+	    add(key) {
 	        this.hash[key] = true;
-	    };
-	    Set.prototype.remove = function (key) {
+	    }
+	    remove(key) {
 	        delete this.hash[key];
-	    };
-	    Set.prototype.forEach = function (runCallback) {
-	        for (var _i = 0, _a = Object.keys(this.hash); _i < _a.length; _i++) {
-	            var key = _a[_i];
+	    }
+	    forEach(runCallback) {
+	        for (let key of Object.keys(this.hash)) {
 	            runCallback(key);
 	        }
-	    };
-	    Set.prototype.size = function () {
+	    }
+	    size() {
 	        return Object.keys(this.hash).length;
-	    };
-	    return Set;
-	}());
-	exports.__esModule = true;
-	exports["default"] = Set;
+	    }
+	}
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = Set;
 
 
 /***/ },
@@ -201,14 +209,13 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var Map_1 = __webpack_require__(7);
-	var ShingleBased = (function () {
+	const Map_1 = __webpack_require__(7);
+	class ShingleBased {
 	    /**
 	     *
 	     * @param k
 	     */
-	    function ShingleBased(k) {
-	        if (k === void 0) { k = 3; }
+	    constructor(k) {
 	        if (k <= 0) {
 	            throw new Error("k should be positive!");
 	        }
@@ -219,9 +226,9 @@
 	     *
 	     * @return
 	     */
-	    ShingleBased.prototype.getK = function () {
+	    getK() {
 	        return this.k;
-	    };
+	    }
 	    /**
 	     * Compute and return the profile of s, as defined by Ukkonen "Approximate
 	     * string-matching with q-grams and maximal matches".
@@ -234,25 +241,24 @@
 	     * @param string
 	     * @return the profile of this string, as an unmodifiable Map
 	     */
-	    ShingleBased.prototype.getProfile = function (fullString) {
-	        var shingles = new Map_1.Map();
-	        var string_no_space = fullString.replace(ShingleBased.SPACE_REG, " ");
-	        for (var i = 0; i < (string_no_space.length - this.k + 1); i++) {
-	            var shingle = string_no_space.substring(i, i + this.k);
-	            var value = shingles.contains(shingle) ? shingles.getValue(shingle) + 1 : 1;
+	    getProfile(fullString) {
+	        let shingles = new Map_1.default();
+	        let string_no_space = fullString.replace(ShingleBased.SPACE_REG, " ");
+	        for (let i = 0; i < (string_no_space.length - this.k + 1); i++) {
+	            let shingle = string_no_space.substring(i, i + this.k);
+	            let value = shingles.contains(shingle) ? shingles.getValue(shingle) + 1 : 1;
 	            shingles.setValue(shingle, value);
 	        }
 	        return shingles;
-	    };
-	    ShingleBased.DEFAULT_K = 3;
-	    /**
-	     * Pattern for finding multiple following spaces.
-	     */
-	    ShingleBased.SPACE_REG = new RegExp(/\s+/);
-	    return ShingleBased;
-	}());
-	exports.__esModule = true;
-	exports["default"] = ShingleBased;
+	    }
+	}
+	ShingleBased.DEFAULT_K = 3;
+	/**
+	 * Pattern for finding multiple following spaces.
+	 */
+	ShingleBased.SPACE_REG = new RegExp(/\s+/);
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = ShingleBased;
 
 
 /***/ },
@@ -260,26 +266,371 @@
 /***/ function(module, exports) {
 
 	"use strict";
-	var Map = (function () {
-	    function Map() {
+	class Map {
+	    constructor() {
 	        this.obj = {};
 	    }
-	    Map.prototype.contains = function (key) {
+	    contains(key) {
 	        return !!this.obj[key];
-	    };
-	    Map.prototype.setValue = function (key, value) {
+	    }
+	    setValue(key, value) {
 	        this.obj[key] = value;
-	    };
-	    Map.prototype.getValue = function (key) {
+	    }
+	    getValue(key) {
 	        return this.obj[key];
-	    };
-	    Map.prototype.getKeys = function () {
+	    }
+	    getKeys() {
 	        return Object.keys(this.obj);
-	    };
-	    return Map;
-	}());
-	exports.__esModule = true;
-	exports["default"] = Map;
+	    }
+	}
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = Map;
+
+
+/***/ },
+/* 8 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	const React = __webpack_require__(1);
+	class ChatConversation extends React.Component {
+	    render() {
+	        return (React.createElement("li", null, 
+	            React.createElement("b", null, this.props.who), 
+	            " says: ", 
+	            React.createElement("span", null, this.props.what)));
+	    }
+	}
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = ChatConversation;
+
+
+/***/ },
+/* 9 */,
+/* 10 */
+/***/ function(module, exports) {
+
+	"use strict";
+	class LinkedGraph {
+	    constructor(root) {
+	        this.knots = {};
+	        this.rootKnot = this.currentKnot = this.knots[root.name] = root;
+	    }
+	    tryLinkKnotsViaWith(origin, via, threshold, destiny) {
+	        try {
+	            // set knot to the knots if it not exists
+	            let originKnot = this.knots[origin.name] = this.knots[origin.name] || origin;
+	            let destinyKnot = this.knots[destiny.name] = this.knots[destiny.name] || destiny;
+	            if (originKnot && destinyKnot) {
+	                return originKnot.tryAddChildViaWith(via, threshold, destinyKnot);
+	            }
+	            else
+	                throw new Error("Knots already linked via this edge");
+	        }
+	        catch (e) {
+	            // knot not found or already linked
+	            console.error(e.message);
+	        }
+	        return false;
+	    }
+	    /**
+	     * @description Try to navigate to new knot on the knots
+	     */
+	    tryNavigateUsing(input) {
+	        try {
+	            let possiblesDestinations = this.currentKnot.getChildrenSortedVia(input);
+	            if (possiblesDestinations.length > 0) {
+	                let futureKnot = possiblesDestinations[0]; // most significant
+	                // add via new path
+	                if (futureKnot.getCurrentSimilarity() > LinkedGraph.ADDITION_SIMILARITY_THRESHOLD) {
+	                    let meanThreshold = this.currentKnot.getMeanThreshold();
+	                    this.tryLinkKnotsViaWith(this.currentKnot, input, meanThreshold, futureKnot);
+	                }
+	                // keep current state
+	                if (!this.currentKnot.equals(futureKnot)) {
+	                    this.currentKnot = futureKnot;
+	                }
+	                // only navigate after assignment!
+	                futureKnot.navigateToItWith(input, this, this.outStream);
+	                return true;
+	            }
+	            else
+	                throw LinkedGraph.getRandonErrorMessage();
+	        }
+	        catch (e) {
+	            this.sendRequestToOutputStream(e);
+	            this.currentKnot.failWith(input, this);
+	        }
+	        return false;
+	    }
+	    /**
+	     * @description Backtrack
+	     */
+	    goToLastKnot() {
+	        if (this.currentKnot.hasParent()) {
+	            this.currentKnot = this.currentKnot.getParent();
+	        }
+	    }
+	    /**
+	     * @description Go to root knot
+	     */
+	    goToRoot() {
+	        this.currentKnot = this.getRoot();
+	    }
+	    /**
+	     * @description Get current knot on navigation
+	     */
+	    getCurrentKnot() {
+	        return this.currentKnot;
+	    }
+	    /**
+	     * @description set output stream to use comunicate with outside with internal messages
+	     */
+	    setOutputStream(outStream) {
+	        this.outStream = outStream;
+	    }
+	    /**
+	     * @description Get root knot
+	     */
+	    getRoot() {
+	        return this.rootKnot;
+	    }
+	    /**
+	     * @description send a request to output stream
+	     */
+	    sendRequestToOutputStream(buffer) {
+	        if (!!this.outStream) {
+	            this.outStream(buffer);
+	        }
+	    }
+	    /**
+	     * @description get some randon error message
+	     */
+	    static getRandonErrorMessage() {
+	        let randMsgIndex = Math.floor(Math.random() * LinkedGraph.errorMessages.length);
+	        return LinkedGraph.errorMessages[randMsgIndex];
+	    }
+	}
+	LinkedGraph.SIMILARITY_THRESHOLD = 0.6;
+	LinkedGraph.ADDITION_SIMILARITY_THRESHOLD = 0.85;
+	LinkedGraph.errorMessages = [
+	    "I didn't undertood what you want!",
+	    "No good command specified!",
+	    "Some error occurred on processing your request!"
+	];
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = LinkedGraph;
+
+
+/***/ },
+/* 11 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	const Jaccard_1 = __webpack_require__(4);
+	let jaccard = new Jaccard_1.default(1);
+	class Knot {
+	    constructor(name) {
+	        this.edges = {};
+	        this.templates = new Array();
+	        this.name = name;
+	    }
+	    /**
+	     * @description Try add child via some command
+	     * @param via
+	     * @param child
+	     * @return boolean returns if child was added or not
+	     */
+	    tryAddChildViaWith(via, threshold, knot) {
+	        let child = this.edges[via];
+	        // add child
+	        if (child === null || child === undefined) {
+	            this.edges[via] = {
+	                edge: knot,
+	                threshold: threshold
+	            };
+	            knot.setParent(this);
+	            return true;
+	        }
+	        // do nothing
+	        return false;
+	    }
+	    /**
+	     * @description Get children sorted by similarity with input
+	     * @param input
+	     * @return Knot array sorted
+	     */
+	    getChildrenSortedVia(input) {
+	        let children = new Array();
+	        for (let via in this.edges) {
+	            let knot = this.edges[via];
+	            knot.edge.currentSimilarity = jaccard.similarity(input, via);
+	            if (knot.edge.currentSimilarity >= knot.threshold) {
+	                children.push(knot.edge);
+	            }
+	        }
+	        children.sort((a, b) => {
+	            return b.getCurrentSimilarity() - a.getCurrentSimilarity();
+	        });
+	        return children;
+	    }
+	    /**
+	     * @description get mean threshold of transition to children
+	     */
+	    getMeanThreshold() {
+	        let count = 0;
+	        let sum = 0;
+	        for (let via in this.edges) {
+	            let knot = this.edges[via];
+	            sum += knot.threshold;
+	            count++;
+	        }
+	        return sum / count;
+	    }
+	    /**
+	     * @description Get currentSimilarity
+	     */
+	    getCurrentSimilarity() {
+	        return this.currentSimilarity;
+	    }
+	    /**
+	     * @description Try to add a template response
+	     */
+	    tryAddTemplate(template) {
+	        if (this.templates.indexOf(template) < 0) {
+	            this.templates.push(template);
+	            return true;
+	        }
+	        return false;
+	    }
+	    /**
+	     * @description Add multiples templates
+	     */
+	    addTemplates(templates) {
+	        templates.forEach(template => this.tryAddTemplate(template));
+	    }
+	    /**
+	     * @description Returns one of the pushed templates
+	     */
+	    getRandomTemplate() {
+	        let randIndex = Math.floor(Math.random() * this.templates.length);
+	        return this.templates[randIndex];
+	    }
+	    /**
+	     * @description Set on entry command
+	     */
+	    onEntry(command) {
+	        this.onentryCommand = command;
+	    }
+	    /**
+	     * @description Navigate to it
+	     */
+	    navigateToItWith(input, graph, printer) {
+	        if (this.onentryCommand)
+	            this.onentryCommand(input, this, graph, printer);
+	    }
+	    /**
+	     * @description set function on fail entering this knot
+	     */
+	    onFail(command) {
+	        this.onfailcommand = command;
+	    }
+	    failWith(input, graph) {
+	        if (this.onfailcommand)
+	            this.onfailcommand(input, this, graph);
+	    }
+	    /**
+	     * @description set parent
+	     */
+	    setParent(parent) {
+	        this.parent = parent;
+	    }
+	    /**
+	     * @description get parent
+	     */
+	    getParent() {
+	        return this.parent;
+	    }
+	    /**
+	     * @description
+	     */
+	    hasParent() {
+	        return !!this.parent;
+	    }
+	    /**
+	     * @description Test equality
+	     */
+	    equals(other) {
+	        return this.name === other.name;
+	    }
+	}
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = Knot;
+
+
+/***/ },
+/* 12 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	const LinkedGraph_1 = __webpack_require__(10);
+	const Knot_1 = __webpack_require__(11);
+	let printer = console.log || null;
+	class String {
+	    static formatHour(hours, minutes) {
+	        let minutesString = (minutes <= 9 ? "0" : "") + minutes.toString();
+	        let hoursString = (hours <= 9 ? "0" : "") + hours.toString();
+	        return hoursString + ":" + minutesString;
+	    }
+	}
+	//////////////////////////////////////////////
+	///     SHOULD BE IN ANOTHER PLACE TO SETUP //
+	//////////////////////////////////////////////
+	let rootKnot = new Knot_1.default("HCIH?");
+	rootKnot.tryAddTemplate("How can i help?");
+	rootKnot.tryAddTemplate("What can i do for you?");
+	rootKnot.onEntry((input, self, graph, printer) => {
+	    let currentTemplate = self.getRandomTemplate();
+	    printer(currentTemplate);
+	});
+	let timeResKnot = new Knot_1.default("WTIIT?");
+	timeResKnot.tryAddTemplate("It's <TIME>");
+	timeResKnot.tryAddTemplate("<TIME>");
+	timeResKnot.onEntry((input, self, graph, printer) => {
+	    let template = self.getRandomTemplate();
+	    let date = new Date();
+	    let HHMM = String.formatHour(date.getHours(), date.getMinutes());
+	    let response = template.replace("<TIME>", HHMM);
+	    printer(response);
+	    graph.goToLastKnot();
+	});
+	let kindKnot = new Knot_1.default("WAYMF?");
+	let kindKnotTArray = ["I'm good stupid, machine remember? And you?", "good. And How are you?", "Awsome. And you?", "Umbelievable Awsome. And you?"];
+	kindKnot.addTemplates(kindKnotTArray);
+	kindKnot.onEntry((input, self, graph, printer) => {
+	    let template = self.getRandomTemplate();
+	    printer(template);
+	});
+	let kindResponseKnot = new Knot_1.default("KRFUR");
+	let oksTemplates = ["Ok! Let's go to another command!", "Ok!", "Ok! Let's do something intersting..."];
+	kindResponseKnot.addTemplates(oksTemplates);
+	kindResponseKnot.onEntry((input, self, graph, printer) => {
+	    let template = self.getRandomTemplate();
+	    printer(template);
+	    graph.goToRoot();
+	});
+	//////////////////////////////////////////////
+	const graph = new LinkedGraph_1.default(rootKnot);
+	graph.tryLinkKnotsViaWith(rootKnot, "what time it it?", 0.6, timeResKnot);
+	graph.tryLinkKnotsViaWith(timeResKnot, "Return to beginning", 0.8, rootKnot);
+	graph.tryLinkKnotsViaWith(rootKnot, "How are you?", 0.7, kindKnot);
+	graph.tryLinkKnotsViaWith(rootKnot, "Are you good?", 0.7, kindKnot);
+	graph.tryLinkKnotsViaWith(kindKnot, "fine thanks", 0.7, kindResponseKnot);
+	graph.tryLinkKnotsViaWith(kindKnot, "i'm ok today, thanks!", 0.7, kindResponseKnot);
+	graph.tryLinkKnotsViaWith(kindKnot, "awsome, thanks!", 0.7, kindResponseKnot);
+	graph.tryLinkKnotsViaWith(kindKnot, "thank you for asking. im good", 0.7, kindResponseKnot);
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = graph;
 
 
 /***/ }

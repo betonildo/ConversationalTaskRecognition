@@ -15,7 +15,7 @@ abstract class ShingleBased {
      *
      * @param k
      */
-    constructor(k : number = 3) {
+    constructor(k : number) {
         if (k <= 0) {
             throw new Error("k should be positive!");
         }

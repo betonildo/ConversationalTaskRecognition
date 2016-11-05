@@ -1,10 +1,9 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom";
 import Chatbot from "./components/Chatbot";
-
-
+import ChatConversation from "./components/ChatConversation";
 
 ReactDOM.render(
-    <Chatbot phrase1="Testando asdasd a similaridade de duas frases." phrase2="Testando similaridade de frases" />,
+    <Chatbot conversations={[]}/>,
     document.getElementById("example")
 );

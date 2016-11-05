@@ -7,6 +7,7 @@
     "@types/node": "^6.0.46",
     "browser-sync": "^2.17.5",
     "gulp": "^3.9.1",
+    "gulp-webpack": "^1.5.0",
     "gutil": "^1.6.4",
     "node": "0.0.0",
     "react": "^15.3.2",
@@ -15,9 +16,12 @@
     "systemjs": "^0.19.40",
     "ts-loader": "^1.0.0",
     "typescript": "^2.0.6",
+    "web-request": "^1.0.7",
     "webpack-stream": "^3.2.0"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "browser-sync-webpack-plugin": "^1.1.3"
+  },
   "scripts": {
     "test": "gulp test"
   },

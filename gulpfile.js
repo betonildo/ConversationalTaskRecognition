@@ -3,12 +3,16 @@ var gutil         = require('gutil');
 var browserSync   = require('browser-sync').create();
 var webpack       = require('webpack-stream');
 var webpackConfig = require('./webpack.config.js');
+var gulpWebpack   = require('gulp-webpack');
 
 // process JS files and return the stream.
 gulp.task('js', function () {
     return gulp.src('dist/*js')
-        .pipe(webpack( webpackConfig ).on('error', gutil.log))
-        .pipe(gulp.dest(''));          
+        .pipe(gulpWebpack(webpackConfig))
+        .pipe(gulp.dest(''))        
+        .on("error", function(error) {
+            this.emit("end");
+        })
 });
 
 // create a task that ensures the `js` task is complete before
