@@ -71,11 +71,11 @@
 	const React = __webpack_require__(1);
 	const ChatConversation_1 = __webpack_require__(4);
 	const AudioPlayer_1 = __webpack_require__(5);
-	const AudioRecorder_1 = __webpack_require__(20);
-	const GraphConfig_1 = __webpack_require__(7);
-	const SpeechSynthesizer_1 = __webpack_require__(14);
+	const AudioRecorder_1 = __webpack_require__(7);
+	const GraphConfig_1 = __webpack_require__(8);
+	const SpeechSynthesizer_1 = __webpack_require__(15);
 	// import specific CSS
-	__webpack_require__(16);
+	__webpack_require__(17);
 	class Chatbot extends React.Component {
 	    constructor(props) {
 	        super(props);
@@ -233,8 +233,26 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	const LinkedGraph_1 = __webpack_require__(8);
-	const Knot_1 = __webpack_require__(9);
+	const React = __webpack_require__(1);
+	class AudioRecorder extends React.Component {
+	    constructor(args) {
+	        super(args);
+	    }
+	    render() {
+	        return (React.createElement("div", null, "This is the audio recorder."));
+	    }
+	}
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = AudioRecorder;
+
+
+/***/ },
+/* 8 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	const LinkedGraph_1 = __webpack_require__(9);
+	const Knot_1 = __webpack_require__(10);
 	let printer = console.log || null;
 	let todos = new Array();
 	class String {
@@ -338,7 +356,7 @@
 
 
 /***/ },
-/* 8 */
+/* 9 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -455,11 +473,11 @@
 
 
 /***/ },
-/* 9 */
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	const Jaccard_1 = __webpack_require__(10);
+	const Jaccard_1 = __webpack_require__(11);
 	let jaccard = new Jaccard_1.default(1);
 	class Knot {
 	    constructor(name) {
@@ -601,12 +619,12 @@
 
 
 /***/ },
-/* 10 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	const Set_1 = __webpack_require__(11);
-	const ShingleBased_1 = __webpack_require__(12);
+	const Set_1 = __webpack_require__(12);
+	const ShingleBased_1 = __webpack_require__(13);
 	class Jaccard extends ShingleBased_1.default {
 	    /**
 	     * The strings are first transformed into sets of k-shingles (sequences of k
@@ -653,7 +671,7 @@
 
 
 /***/ },
-/* 11 */
+/* 12 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -687,11 +705,11 @@
 
 
 /***/ },
-/* 12 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	const Map_1 = __webpack_require__(13);
+	const Map_1 = __webpack_require__(14);
 	class ShingleBased {
 	    /**
 	     *
@@ -744,7 +762,7 @@
 
 
 /***/ },
-/* 13 */
+/* 14 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -770,13 +788,13 @@
 
 
 /***/ },
-/* 14 */
+/* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 	const voices = ["en-US_LisaVoice", "pt-BR_IsabelaVoice", "en-US_MichaelVoice", "en-US_AllisonVoice"];
 	const watsonApiUrl = "https://watson-api-explorer.mybluemix.net/text-to-speech/api/v1/synthesize?accept=audio%2Fogg%3Bcodecs%3Dopus";
-	const Requester_1 = __webpack_require__(15);
+	const Requester_1 = __webpack_require__(16);
 	const Queue_1 = __webpack_require__(6);
 	class SpeechSynthesizer {
 	    constructor() {
@@ -828,7 +846,7 @@
 
 
 /***/ },
-/* 15 */
+/* 16 */
 /***/ function(module, exports) {
 
 	/// <reference path="../typings/whatwg-streams/whatwg-streams.d.ts" />
@@ -852,16 +870,16 @@
 
 
 /***/ },
-/* 16 */
+/* 17 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 	
 	// load the styles
-	var content = __webpack_require__(17);
+	var content = __webpack_require__(18);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	// add the styles to the DOM
-	var update = __webpack_require__(19)(content, {});
+	var update = __webpack_require__(20)(content, {});
 	if(content.locals) module.exports = content.locals;
 	// Hot Module Replacement
 	if(false) {
@@ -878,10 +896,10 @@
 	}
 
 /***/ },
-/* 17 */
+/* 18 */
 /***/ function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(18)();
+	exports = module.exports = __webpack_require__(19)();
 	// imports
 	
 	
@@ -892,7 +910,7 @@
 
 
 /***/ },
-/* 18 */
+/* 19 */
 /***/ function(module, exports) {
 
 	/*
@@ -948,7 +966,7 @@
 
 
 /***/ },
-/* 19 */
+/* 20 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*
@@ -1197,24 +1215,6 @@
 		if(oldSrc)
 			URL.revokeObjectURL(oldSrc);
 	}
-
-
-/***/ },
-/* 20 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-	const React = __webpack_require__(1);
-	class AudioRecorder extends React.Component {
-	    constructor(args) {
-	        super(args);
-	    }
-	    render() {
-	        return (React.createElement("div", null, "This is the audio recorder."));
-	    }
-	}
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.default = AudioRecorder;
 
 
 /***/ }
