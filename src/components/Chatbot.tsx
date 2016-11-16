@@ -1,6 +1,12 @@
 import * as React from "react";
 import ChatConversation from "./ChatConversation";
+import AudioPlayer from "./AudioPlayer";
+import AudioRecorder from "./AudioRecorder";
 import graph from "../GraphConfig";
+import SpeechSynthesizer from "../SpeechSynthesizer";
+
+// import specific CSS
+require("./Chatbot.css");
 
 interface IChatbot {
     conversations : Array<ChatConversation>
@@ -9,6 +15,10 @@ interface IChatbot {
 export default class Chatbot extends React.Component<IChatbot, {}> {
 
     private inputElement : HTMLInputElement;
+    private synthesizer : SpeechSynthesizer;
+    private conversationHistory : HTMLElement;
+    private player : AudioPlayer;
+    private recorder : AudioRecorder;
 
     state : {
         conversations : Array<ChatConversation>   
@@ -20,6 +30,8 @@ export default class Chatbot extends React.Component<IChatbot, {}> {
             conversations : new Array<ChatConversation>()
         }
 
+        this.synthesizer = new SpeechSynthesizer();
+        this.synthesizer.setCallbackOnRequests(this.onAudioLoadedDonePlayIt.bind(this));
         graph.setOutputStream(this.printer.bind(this));
     }
 
@@ -29,45 +41,48 @@ export default class Chatbot extends React.Component<IChatbot, {}> {
             let who = "Me";
             let what = this.inputElement.value;
             this.inputElement.value = "";
-
-            let c = new ChatConversation({who:who, what:what});
-            let self = this;
-            this.setState((prevState : IChatbot, props : IChatbot) => {
-                prevState.conversations.push(c);
-                return prevState;
-            });
-
+            this.pushToConversation(who, what);
             graph.tryNavigateUsing(what);
         }
+    }
+
+    onAudioLoadedDonePlayIt(error:any, blob:Blob) {
+        if (!error) this.player.playAudio(blob);
+        else console.error(error);
     }
 
     printer(input:string) {
         let who = "Watson";
         let what = input.toString();
-
-        let c = new ChatConversation({who:who, what:what});
-        let self = this;
-        this.setState((prevState : IChatbot, props : IChatbot) => {
-            prevState.conversations.push(c);
-            return prevState;
-        });
+        this.pushToConversation(who, what);
+        this.synthesizer.transformTextToSpeech(input);       
     }
 
-    componentDidMount() {
-        this.inputElement = document.getElementById("inputElement") as HTMLInputElement;
+    pushToConversation(who:string,what:string) {
+        this.setState((prevState : IChatbot, props : IChatbot) => {
+            prevState.conversations.push(new ChatConversation({who:who, what:what}));
+            return prevState;
+        });   
     }
 
     render() {
+
         return (
-            <div>
-                <ul >
-                    {
-                        this.state.conversations.map((c, i) => {
-                            return <ChatConversation key={i} who={c.props.who} what={c.props.what} />
-                        })
-                    }
-                </ul>
-                <input type="text" id="inputElement" onKeyDown={this.handleOnKeyDown.bind(this)}/>
+            <div className="Chatbot">
+                <div className="conversationHistory" ref={(div) => this.conversationHistory = div}>
+                    <ul >
+                        {
+                            this.state.conversations.map((c, i) => {
+                                return <ChatConversation key={i} who={c.props.who} what={c.props.what} />
+                            })
+                        }
+                    </ul>
+                </div>
+                <div className="inputAndOutput">
+                    <input ref={(input) => this.inputElement = input} type="text" id="inputElement" onKeyDown={this.handleOnKeyDown.bind(this)}/>
+                    <AudioPlayer ref={(audioPlayerTag) => this.player = audioPlayerTag} currentAudioUrl=""/>
+                    <AudioRecorder ref={(audioRecorderTag) => this.recorder = audioRecorderTag} />
+                </div>
             </div>
         )
     }

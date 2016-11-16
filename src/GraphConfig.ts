@@ -3,6 +3,8 @@ import Knot from "./Knot";
 import SpeechSynthesizer from "./SpeechSynthesizer";
 
 let printer = console.log || null;
+let todos = new Array<string>();
+
 
 class String {
 
@@ -53,6 +55,56 @@ kindResponseKnot.onEntry( (input:string, self:Knot, graph:LinkedGraph, printer:F
     graph.goToRoot();
 });
 
+let markTodo = new Knot("MTWD");
+let marksResponse = ["Ok, now say what's the description", "What is the description?"];
+markTodo.addTemplates(marksResponse);
+markTodo.onEntry( (input:string, self:Knot, graph:LinkedGraph, printer:Function) => {
+
+    let template = self.getRandomTemplate();
+    printer(template);
+});
+
+let markTodoWithDescription = new Knot("MTWDNOW");
+let markTodoWIthDescriptionTemplates = ["\"<TODO>\" marked properly", "I saved: \"<TODO>\""];
+markTodoWithDescription.addTemplates(markTodoWIthDescriptionTemplates);
+markTodoWithDescription.onEntry( (input:string, self:Knot, graph:LinkedGraph, printer:Function) => {
+    
+    let template = self.getRandomTemplate();
+    let response = template.replace("<TODO>", input);
+    printer(response);
+
+    todos.push(input);
+    graph.goToRoot();
+});
+
+let listTodo = new Knot("LTWD");
+let listTodoResponse = ["Your tasks are: <TODOS>"];
+listTodo.addTemplates(listTodoResponse);
+listTodo.onEntry( (input:string, self:Knot, graph:LinkedGraph, printer:Function) => {
+
+    let template = self.getRandomTemplate().toString();
+    let todosList = "";
+    let response = "You don't have any task to do!";
+
+    if (todos.length > 0) {
+        todos.forEach( (todo:string,index:number) => {
+            if (index > 0){
+                todosList += ", ";
+            }
+            todosList += todo;
+
+            if (index == todos.length - 1){
+                todosList += ".";
+            }                
+        });
+        response = template.replace("<TODOS>", todosList);
+        todosList += "";
+    }
+    
+    printer(response);
+
+    graph.goToRoot();
+});
 
 //////////////////////////////////////////////
 
@@ -66,7 +118,8 @@ graph.tryLinkKnotsViaWith(kindKnot, "fine thanks", 0.7, kindResponseKnot);
 graph.tryLinkKnotsViaWith(kindKnot, "i'm ok today, thanks!", 0.7, kindResponseKnot);
 graph.tryLinkKnotsViaWith(kindKnot, "awsome, thanks!", 0.7, kindResponseKnot);
 graph.tryLinkKnotsViaWith(kindKnot, "thank you for asking. im good", 0.7, kindResponseKnot);
-
-
-
+graph.tryLinkKnotsViaWith(rootKnot, "mark a task with description", 0.7, markTodo);
+graph.tryLinkKnotsViaWith(rootKnot, "list my tasks", 0.7, listTodo);
+graph.tryLinkKnotsViaWith(markTodo, "", 0, markTodoWithDescription);
+// TODO: set linking between nodes of the tasks
 export default graph;

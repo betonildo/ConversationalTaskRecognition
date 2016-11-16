@@ -1,0 +1,21 @@
+.Chatbot {
+
+}
+
+.conversationHistory {
+    height: 85%;
+    width: 100%;
+    position: fixed;
+    top:0%;
+    overflow-y: auto;
+    overflow-x: visible;
+    scroll-behavior: smooth;
+    scroll-snap-coordinate: 100%;
+    scroll-snap-points-y: repeat(1);
+}
+
+.inputAndOutput {
+    position: fixed;
+    bottom: 0%;
+    height: 10%;
+}

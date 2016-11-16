@@ -5,9 +5,10 @@ export default class LinkedGraph {
     private static SIMILARITY_THRESHOLD = 0.6;
     private static ADDITION_SIMILARITY_THRESHOLD = 0.85;
     private static errorMessages : string[] = [
-        "I didn't undertood what you want!",
+        "I didn't understood what you want!",
         "No good command specified!",
-        "Some error occurred on processing your request!"
+        "Some error occurred on processing your request!",
+        "I can't do what you want!"
     ]
 
 
