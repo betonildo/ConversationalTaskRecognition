@@ -86,9 +86,12 @@
 	        this.synthesizer.setCallbackOnRequests(this.onAudioLoadedDonePlayIt.bind(this));
 	        GraphConfig_1.default.setOutputStream(this.printer.bind(this));
 	    }
+	    componentDidMount() {
+	        this.printer(GraphConfig_1.default.getCurrentKnot().getRandomTemplate());
+	    }
 	    handleOnKeyDown(e) {
-	        if (e.key === 'Enter') {
-	            let who = "Me";
+	        if (e.key === Chatbot.Enter) {
+	            let who = Chatbot.Me;
 	            let what = this.inputElement.value;
 	            this.inputElement.value = "";
 	            this.pushToConversation(who, what);
@@ -126,6 +129,8 @@
 	                React.createElement(AudioRecorder_1.default, {ref: (audioRecorderTag) => this.recorder = audioRecorderTag}))));
 	    }
 	}
+	Chatbot.Enter = "Enter";
+	Chatbot.Me = "Me";
 	Object.defineProperty(exports, "__esModule", { value: true });
 	exports.default = Chatbot;
 
@@ -223,6 +228,12 @@
 	    isEmpty() {
 	        return this.things.length === 0;
 	    }
+	    count() {
+	        return this.things.length;
+	    }
+	    clear() {
+	        this.things = new Array();
+	    }
 	}
 	Object.defineProperty(exports, "__esModule", { value: true });
 	exports.default = Queue;
@@ -234,14 +245,136 @@
 
 	"use strict";
 	const React = __webpack_require__(1);
+	const Queue_1 = __webpack_require__(6);
+	const Vector2_1 = __webpack_require__(21);
 	class AudioRecorder extends React.Component {
 	    constructor(args) {
 	        super(args);
+	        this.bufferSize = 2048;
+	        this.audioRawIndex = 0;
+	        this.listening = false;
+	        this.recordingTime = 0;
+	        this.numberOfChannels = 1;
+	        this.frameCount = 0;
+	        window.URL = window.URL || window.webkitURL;
+	        navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+	        navigator.getUserMedia({ audio: true }, this.successGetUserMediaCallback.bind(this), this.errorGetUserMediaCallback.bind(this));
+	        this.audioBufferQueue = new Queue_1.default();
+	        this.audioRaw = new Float32Array(10000000);
+	    }
+	    successGetUserMediaCallback(stream) {
+	        this.mediaRec = stream;
+	        this.audioContext = new AudioContext();
+	        this.microphone = this.audioContext.createMediaStreamSource(stream);
+	        this.filter = this.audioContext.createBiquadFilter();
+	        // microphone -> filter -> destination.
+	        //this.microphone.connect(this.filter);
+	        //this.filter.connect(this.audioContext.destination);
+	        this.frameCount = this.audioContext.sampleRate * this.numberOfChannels;
+	        this.recorder = this.audioContext.createScriptProcessor(this.bufferSize, this.numberOfChannels, this.numberOfChannels);
+	        this.recorder.onaudioprocess = this.audioProcessing.bind(this);
+	        this.microphone.connect(this.recorder);
+	        this.recorder.connect(this.audioContext.destination);
+	        this.listening = true;
+	        this.startTimeWatcher();
+	        return null;
+	    }
+	    errorGetUserMediaCallback(mediaError) {
+	        console.log(mediaError);
+	        this.mediaRec = null;
+	        return null;
+	    }
+	    audioProcessing(event) {
+	        if (this.hasMediaStream()) {
+	            this.previousFloatArrayData = this.currentFloatArrayData;
+	            this.currentFloatArrayData = event.inputBuffer.getChannelData(0);
+	            if (this.previousFloatArrayData) {
+	                let pitch = this.detectAmountOfPitch(this.previousFloatArrayData, this.currentFloatArrayData);
+	                if (!this.isRecording() && pitch.lower < pitch.higher) {
+	                    this.startRecording();
+	                }
+	                if (this.isRecording() && pitch.lower > pitch.higher || this.recordingTime >= AudioRecorder.MaxRecordTime) {
+	                    this.stopRecording();
+	                }
+	            }
+	            this.setMaxRecordTimeFrame();
+	        }
+	    }
+	    startTimeWatcher() {
+	        this.recordingTime = 0;
+	        this.interval = setInterval(() => {
+	            this.recordingTime++;
+	            console.log(this.recordingTime);
+	            if (this.recordingTime > AudioRecorder.MaxRecordTime)
+	                this.recordingTime = 0;
+	        }, 1000);
+	    }
+	    setMaxRecordTimeFrame() {
+	        if (this.recordingTime < AudioRecorder.MaxRecordTime) {
+	            for (let i = 0; i < this.currentFloatArrayData.length; i++) {
+	                this.audioRaw[this.audioRawIndex] = this.currentFloatArrayData[i];
+	                this.audioRawIndex++;
+	            }
+	        }
+	        else {
+	            this.audioRaw = this.audioRaw.slice(this.currentFloatArrayData.length, this.audioRaw.length);
+	            for (let i = this.audioRawIndex - 1; i < this.currentFloatArrayData.length; i++) {
+	                this.audioRaw[i] = this.currentFloatArrayData[i];
+	            }
+	        }
+	        console.log(this.audioRawIndex);
+	    }
+	    detectAmountOfPitch(previousChannelData, currentChannelData) {
+	        let V = Vector2_1.default.getVFloatArray(previousChannelData);
+	        let Vminus = Vector2_1.default.getVminusFloatArray(currentChannelData);
+	        let Vplus = Vector2_1.default.getVplusFloatArray(currentChannelData);
+	        let lower = Vector2_1.default.dot(V, Vminus);
+	        let higher = Vector2_1.default.dot(V, Vplus);
+	        return { lower, higher, V, Vminus, Vplus };
+	    }
+	    startRecording() {
+	        this.recording = true;
+	        console.log('Start Recording!!!');
+	    }
+	    stopRecording() {
+	        this.recording = false;
+	        console.log('Stop Recording!!!');
+	        let audioBufferC = this.audioContext.createBuffer(1, this.audioRawIndex, this.audioContext.sampleRate);
+	        audioBufferC.copyToChannel(this.audioRaw, 0, 0);
+	        console.log(audioBufferC);
+	        this.playAudioBuffer(audioBufferC);
+	    }
+	    playAudioBuffer(audioBuffer) {
+	        let audioBufferSource = this.audioContext.createBufferSource();
+	        audioBufferSource.buffer = audioBuffer;
+	        audioBufferSource.onended = this.onAudioBufferSourceEnded.bind(this);
+	        audioBufferSource.connect(this.audioContext.destination);
+	        audioBufferSource.start();
+	    }
+	    onAudioBufferSourceEnded(ev) {
+	        if (!this.audioBufferQueue.isEmpty()) {
+	            let audioBuffer = this.audioBufferQueue.dequeue();
+	            console.log(audioBuffer);
+	            this.playAudioBuffer(audioBuffer);
+	        }
+	    }
+	    isRecording() {
+	        return this.recording;
+	    }
+	    hasMediaStream() {
+	        return !!this.mediaRec;
 	    }
 	    render() {
-	        return (React.createElement("div", null, "This is the audio recorder."));
+	        return (React.createElement("div", null, 
+	            React.createElement("audio", {ref: (audioTag) => this.audioTag = audioTag, controls: true}, 
+	                React.createElement("source", {ref: (sourceTag) => this.sourceTag = sourceTag})
+	            ), 
+	            React.createElement("input", {type: "button", onClick: this.startRecording.bind(this), value: "Start Recording"}), 
+	            React.createElement("input", {type: "button", onClick: this.stopRecording.bind(this), value: "Stop Recording"})));
 	    }
 	}
+	AudioRecorder.MaxRecordTime = 30;
+	AudioRecorder.PitchThreshold = 1e-10;
 	Object.defineProperty(exports, "__esModule", { value: true });
 	exports.default = AudioRecorder;
 
@@ -904,7 +1037,7 @@
 	
 	
 	// module
-	exports.push([module.id, ".Chatbot {\r\n\r\n}\r\n\r\n.conversationHistory {\r\n    height: 85%;\r\n    width: 100%;\r\n    position: fixed;\r\n    top:0%;\r\n    overflow-y: auto;\r\n    overflow-x: visible;\r\n    scroll-behavior: smooth;\r\n    scroll-snap-coordinate: 100%;\r\n    scroll-snap-points-y: repeat(1);\r\n}\r\n\r\n.inputAndOutput {\r\n    position: fixed;\r\n    bottom: 0%;\r\n    height: 10%;\r\n}", ""]);
+	exports.push([module.id, ".Chatbot {\r\n\r\n}\r\n\r\n.conversationHistory {\r\n    height: 75%;\r\n    width: 100%;\r\n    position: fixed;\r\n    top:0%;\r\n    overflow-y: auto;\r\n    overflow-x: visible;\r\n    scroll-behavior: smooth;\r\n    scroll-snap-coordinate: 100%;\r\n    scroll-snap-points-y: repeat(1);\r\n}\r\n\r\n.inputAndOutput {\r\n    position: fixed;\r\n    bottom: 0%;\r\n    height: 20%;\r\n}", ""]);
 	
 	// exports
 
@@ -1215,6 +1348,62 @@
 		if(oldSrc)
 			URL.revokeObjectURL(oldSrc);
 	}
+
+
+/***/ },
+/* 21 */
+/***/ function(module, exports) {
+
+	"use strict";
+	class Vector2 {
+	    static dot(u, v) {
+	        return u.x * v.x + u.y * v.y;
+	    }
+	    normalize() {
+	        let norm = this.magnitude();
+	        let u = this.clone();
+	        u.x = Math.abs(u.x / norm);
+	        u.y = Math.abs(u.y / norm);
+	        return u;
+	    }
+	    magnitude() {
+	        return Math.sqrt(this.x * this.x + this.y * this.y);
+	    }
+	    clone() {
+	        let u = new Vector2();
+	        u.x = this.x;
+	        u.y = this.y;
+	        return u;
+	    }
+	    static getVminusFloatArray(floatArray) {
+	        let u = new Vector2();
+	        u.y = this.meanFloatArrayFromTo(floatArray, 2, floatArray.length - 1);
+	        u.x = floatArray.length - 2;
+	        return u;
+	    }
+	    static getVplusFloatArray(floatArray) {
+	        let u = new Vector2();
+	        u.y = this.meanFloatArrayFromTo(floatArray, 0, floatArray.length - 3);
+	        u.x = floatArray.length - 2;
+	        return u;
+	    }
+	    static getVFloatArray(floatArray) {
+	        let u = new Vector2();
+	        u.y = this.meanFloatArrayFromTo(floatArray, 1, floatArray.length - 2);
+	        u.x = floatArray.length - 2;
+	        return u;
+	    }
+	    static meanFloatArrayFromTo(floatArray, startIndex, endIndex) {
+	        let amplitude = 0;
+	        let length = floatArray.length - 2;
+	        for (let i = startIndex; i <= endIndex; i++) {
+	            amplitude += floatArray[i];
+	        }
+	        return amplitude / length;
+	    }
+	}
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = Vector2;
 
 
 /***/ }

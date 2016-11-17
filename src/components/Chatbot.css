@@ -3,7 +3,7 @@
 }
 
 .conversationHistory {
-    height: 85%;
+    height: 75%;
     width: 100%;
     position: fixed;
     top:0%;
@@ -17,5 +17,5 @@
 .inputAndOutput {
     position: fixed;
     bottom: 0%;
-    height: 10%;
+    height: 20%;
 }

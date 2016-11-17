@@ -24,4 +24,12 @@ export default class Queue<T> {
     public isEmpty() : boolean {
         return this.things.length === 0;
     }
+
+    public count() : number {
+        return this.things.length;
+    }
+
+    public clear() {
+        this.things = new Array<T>();
+    }
 }

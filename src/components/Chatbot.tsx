@@ -19,6 +19,8 @@ export default class Chatbot extends React.Component<IChatbot, {}> {
     private conversationHistory : HTMLElement;
     private player : AudioPlayer;
     private recorder : AudioRecorder;
+    private static Enter : string = "Enter";
+    private static Me : string = "Me";
 
     state : {
         conversations : Array<ChatConversation>   
@@ -32,13 +34,17 @@ export default class Chatbot extends React.Component<IChatbot, {}> {
 
         this.synthesizer = new SpeechSynthesizer();
         this.synthesizer.setCallbackOnRequests(this.onAudioLoadedDonePlayIt.bind(this));
-        graph.setOutputStream(this.printer.bind(this));
+        graph.setOutputStream(this.printer.bind(this));        
+    }
+
+    componentDidMount() {
+        this.printer(graph.getCurrentKnot().getRandomTemplate());
     }
 
     handleOnKeyDown(e:KeyboardEventInit) {
 
-        if (e.key === 'Enter') {
-            let who = "Me";
+        if (e.key === Chatbot.Enter) {
+            let who = Chatbot.Me;
             let what = this.inputElement.value;
             this.inputElement.value = "";
             this.pushToConversation(who, what);
