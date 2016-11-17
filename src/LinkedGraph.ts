@@ -16,9 +16,11 @@ export default class LinkedGraph {
     private currentKnot : Knot;
     private rootKnot : Knot;
     private outStream : Function;
+    private outStreams : Array<Function>;
 
     constructor(root:Knot) {
         this.rootKnot = this.currentKnot = this.knots[root.name] = root;
+        this.outStreams = new Array<Function>();
     }
 
     public tryLinkKnotsViaWith(origin:Knot, via:string, threshold:number, destiny:Knot) : boolean {
@@ -63,6 +65,7 @@ export default class LinkedGraph {
 
                 // only navigate after assignment!
                 futureKnot.navigateToItWith(input, this, this.outStream);
+                this.sendRequestToOutputStreamWithUserInput(input);
                 return true;
             }
             else throw LinkedGraph.getRandonErrorMessage();
@@ -105,6 +108,13 @@ export default class LinkedGraph {
     public setOutputStream(outStream:Function) {
         this.outStream = outStream;
     }
+    
+    /**
+     * @description Add outside stream for custom compute.
+    */
+    public addOutputStreamForUserInputs(outStream:Function) {
+        this.outStreams.push(outStream);
+    }
 
     /**
      * @description Get root knot
@@ -119,6 +129,15 @@ export default class LinkedGraph {
     private sendRequestToOutputStream(buffer:any) {
         if (!!this.outStream) {
             this.outStream(buffer);
+        }
+    }
+    
+    /**
+     * @description expose user input to outside processing
+    */
+    private sendRequestToOutputStreamWithUserInput(buffer:any) {
+        if (this.outStreams.length > 0) {
+            this.outStreams.forEach(outStream => outStream(buffer));
         }
     }
 

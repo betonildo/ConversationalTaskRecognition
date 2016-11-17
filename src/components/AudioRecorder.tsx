@@ -123,7 +123,7 @@ export default class AudioRecorder extends React.Component<IAudioRecorder, {}> {
             }
         }
 
-        console.log(this.audioRawIndex);
+        //console.log(this.audioRawIndex);
     }
 
     private detectAmountOfPitch(previousChannelData:Float32Array, currentChannelData:Float32Array) : {lower:number,higher:number,V:Vector2,Vminus:Vector2,Vplus:Vector2} {

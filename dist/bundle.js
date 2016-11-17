@@ -72,10 +72,10 @@
 	const ChatConversation_1 = __webpack_require__(4);
 	const AudioPlayer_1 = __webpack_require__(5);
 	const AudioRecorder_1 = __webpack_require__(7);
-	const GraphConfig_1 = __webpack_require__(8);
-	const SpeechSynthesizer_1 = __webpack_require__(15);
+	const GraphConfig_1 = __webpack_require__(9);
+	const SpeechSynthesizer_1 = __webpack_require__(16);
 	// import specific CSS
-	__webpack_require__(17);
+	__webpack_require__(18);
 	class Chatbot extends React.Component {
 	    constructor(props) {
 	        super(props);
@@ -85,6 +85,7 @@
 	        this.synthesizer = new SpeechSynthesizer_1.default();
 	        this.synthesizer.setCallbackOnRequests(this.onAudioLoadedDonePlayIt.bind(this));
 	        GraphConfig_1.default.setOutputStream(this.printer.bind(this));
+	        GraphConfig_1.default.addOutputStreamForUserInputs(this.getUserInput.bind(this));
 	    }
 	    componentDidMount() {
 	        this.printer(GraphConfig_1.default.getCurrentKnot().getRandomTemplate());
@@ -103,6 +104,9 @@
 	            this.player.playAudio(blob);
 	        else
 	            console.error(error);
+	    }
+	    getUserInput(input) {
+	        console.log(input);
 	    }
 	    printer(input) {
 	        let who = "Watson";
@@ -246,7 +250,7 @@
 	"use strict";
 	const React = __webpack_require__(1);
 	const Queue_1 = __webpack_require__(6);
-	const Vector2_1 = __webpack_require__(21);
+	const Vector2_1 = __webpack_require__(8);
 	class AudioRecorder extends React.Component {
 	    constructor(args) {
 	        super(args);
@@ -322,7 +326,7 @@
 	                this.audioRaw[i] = this.currentFloatArrayData[i];
 	            }
 	        }
-	        console.log(this.audioRawIndex);
+	        //console.log(this.audioRawIndex);
 	    }
 	    detectAmountOfPitch(previousChannelData, currentChannelData) {
 	        let V = Vector2_1.default.getVFloatArray(previousChannelData);
@@ -381,11 +385,67 @@
 
 /***/ },
 /* 8 */
+/***/ function(module, exports) {
+
+	"use strict";
+	class Vector2 {
+	    static dot(u, v) {
+	        return u.x * v.x + u.y * v.y;
+	    }
+	    normalize() {
+	        let norm = this.magnitude();
+	        let u = this.clone();
+	        u.x = Math.abs(u.x / norm);
+	        u.y = Math.abs(u.y / norm);
+	        return u;
+	    }
+	    magnitude() {
+	        return Math.sqrt(this.x * this.x + this.y * this.y);
+	    }
+	    clone() {
+	        let u = new Vector2();
+	        u.x = this.x;
+	        u.y = this.y;
+	        return u;
+	    }
+	    static getVminusFloatArray(floatArray) {
+	        let u = new Vector2();
+	        u.y = this.meanFloatArrayFromTo(floatArray, 2, floatArray.length - 1);
+	        u.x = floatArray.length - 2;
+	        return u;
+	    }
+	    static getVplusFloatArray(floatArray) {
+	        let u = new Vector2();
+	        u.y = this.meanFloatArrayFromTo(floatArray, 0, floatArray.length - 3);
+	        u.x = floatArray.length - 2;
+	        return u;
+	    }
+	    static getVFloatArray(floatArray) {
+	        let u = new Vector2();
+	        u.y = this.meanFloatArrayFromTo(floatArray, 1, floatArray.length - 2);
+	        u.x = floatArray.length - 2;
+	        return u;
+	    }
+	    static meanFloatArrayFromTo(floatArray, startIndex, endIndex) {
+	        let amplitude = 0;
+	        let length = floatArray.length - 2;
+	        for (let i = startIndex; i <= endIndex; i++) {
+	            amplitude += floatArray[i];
+	        }
+	        return amplitude / length;
+	    }
+	}
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = Vector2;
+
+
+/***/ },
+/* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	const LinkedGraph_1 = __webpack_require__(9);
-	const Knot_1 = __webpack_require__(10);
+	const LinkedGraph_1 = __webpack_require__(10);
+	const Knot_1 = __webpack_require__(11);
 	let printer = console.log || null;
 	let todos = new Array();
 	class String {
@@ -489,7 +549,7 @@
 
 
 /***/ },
-/* 9 */
+/* 10 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -497,6 +557,7 @@
 	    constructor(root) {
 	        this.knots = {};
 	        this.rootKnot = this.currentKnot = this.knots[root.name] = root;
+	        this.outStreams = new Array();
 	    }
 	    tryLinkKnotsViaWith(origin, via, threshold, destiny) {
 	        try {
@@ -534,6 +595,7 @@
 	                }
 	                // only navigate after assignment!
 	                futureKnot.navigateToItWith(input, this, this.outStream);
+	                this.sendRequestToOutputStreamWithUserInput(input);
 	                return true;
 	            }
 	            else
@@ -572,6 +634,12 @@
 	        this.outStream = outStream;
 	    }
 	    /**
+	     * @description Add outside stream for custom compute.
+	    */
+	    addOutputStreamForUserInputs(outStream) {
+	        this.outStreams.push(outStream);
+	    }
+	    /**
 	     * @description Get root knot
 	     */
 	    getRoot() {
@@ -583,6 +651,14 @@
 	    sendRequestToOutputStream(buffer) {
 	        if (!!this.outStream) {
 	            this.outStream(buffer);
+	        }
+	    }
+	    /**
+	     * @description expose user input to outside processing
+	    */
+	    sendRequestToOutputStreamWithUserInput(buffer) {
+	        if (this.outStreams.length > 0) {
+	            this.outStreams.forEach(outStream => outStream(buffer));
 	        }
 	    }
 	    /**
@@ -606,11 +682,11 @@
 
 
 /***/ },
-/* 10 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	const Jaccard_1 = __webpack_require__(11);
+	const Jaccard_1 = __webpack_require__(12);
 	let jaccard = new Jaccard_1.default(1);
 	class Knot {
 	    constructor(name) {
@@ -752,12 +828,12 @@
 
 
 /***/ },
-/* 11 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	const Set_1 = __webpack_require__(12);
-	const ShingleBased_1 = __webpack_require__(13);
+	const Set_1 = __webpack_require__(13);
+	const ShingleBased_1 = __webpack_require__(14);
 	class Jaccard extends ShingleBased_1.default {
 	    /**
 	     * The strings are first transformed into sets of k-shingles (sequences of k
@@ -804,7 +880,7 @@
 
 
 /***/ },
-/* 12 */
+/* 13 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -838,11 +914,11 @@
 
 
 /***/ },
-/* 13 */
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	const Map_1 = __webpack_require__(14);
+	const Map_1 = __webpack_require__(15);
 	class ShingleBased {
 	    /**
 	     *
@@ -895,7 +971,7 @@
 
 
 /***/ },
-/* 14 */
+/* 15 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -921,13 +997,13 @@
 
 
 /***/ },
-/* 15 */
+/* 16 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 	const voices = ["en-US_LisaVoice", "pt-BR_IsabelaVoice", "en-US_MichaelVoice", "en-US_AllisonVoice"];
 	const watsonApiUrl = "https://watson-api-explorer.mybluemix.net/text-to-speech/api/v1/synthesize?accept=audio%2Fogg%3Bcodecs%3Dopus";
-	const Requester_1 = __webpack_require__(16);
+	const Requester_1 = __webpack_require__(17);
 	const Queue_1 = __webpack_require__(6);
 	class SpeechSynthesizer {
 	    constructor() {
@@ -979,7 +1055,7 @@
 
 
 /***/ },
-/* 16 */
+/* 17 */
 /***/ function(module, exports) {
 
 	/// <reference path="../typings/whatwg-streams/whatwg-streams.d.ts" />
@@ -1003,16 +1079,16 @@
 
 
 /***/ },
-/* 17 */
+/* 18 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 	
 	// load the styles
-	var content = __webpack_require__(18);
+	var content = __webpack_require__(19);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	// add the styles to the DOM
-	var update = __webpack_require__(20)(content, {});
+	var update = __webpack_require__(21)(content, {});
 	if(content.locals) module.exports = content.locals;
 	// Hot Module Replacement
 	if(false) {
@@ -1029,21 +1105,21 @@
 	}
 
 /***/ },
-/* 18 */
+/* 19 */
 /***/ function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(19)();
+	exports = module.exports = __webpack_require__(20)();
 	// imports
 	
 	
 	// module
-	exports.push([module.id, ".Chatbot {\r\n\r\n}\r\n\r\n.conversationHistory {\r\n    height: 75%;\r\n    width: 100%;\r\n    position: fixed;\r\n    top:0%;\r\n    overflow-y: auto;\r\n    overflow-x: visible;\r\n    scroll-behavior: smooth;\r\n    scroll-snap-coordinate: 100%;\r\n    scroll-snap-points-y: repeat(1);\r\n}\r\n\r\n.inputAndOutput {\r\n    position: fixed;\r\n    bottom: 0%;\r\n    height: 20%;\r\n}", ""]);
+	exports.push([module.id, ".Chatbot {\n\n}\n\n.conversationHistory {\n    height: 75%;\n    width: 100%;\n    position: fixed;\n    top:0%;\n    overflow-y: auto;\n    overflow-x: visible;\n    scroll-behavior: smooth;\n    scroll-snap-coordinate: 100%;\n    scroll-snap-points-y: repeat(1);\n}\n\n.inputAndOutput {\n    position: fixed;\n    bottom: 0%;\n    height: 20%;\n}", ""]);
 	
 	// exports
 
 
 /***/ },
-/* 19 */
+/* 20 */
 /***/ function(module, exports) {
 
 	/*
@@ -1099,7 +1175,7 @@
 
 
 /***/ },
-/* 20 */
+/* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*
@@ -1348,62 +1424,6 @@
 		if(oldSrc)
 			URL.revokeObjectURL(oldSrc);
 	}
-
-
-/***/ },
-/* 21 */
-/***/ function(module, exports) {
-
-	"use strict";
-	class Vector2 {
-	    static dot(u, v) {
-	        return u.x * v.x + u.y * v.y;
-	    }
-	    normalize() {
-	        let norm = this.magnitude();
-	        let u = this.clone();
-	        u.x = Math.abs(u.x / norm);
-	        u.y = Math.abs(u.y / norm);
-	        return u;
-	    }
-	    magnitude() {
-	        return Math.sqrt(this.x * this.x + this.y * this.y);
-	    }
-	    clone() {
-	        let u = new Vector2();
-	        u.x = this.x;
-	        u.y = this.y;
-	        return u;
-	    }
-	    static getVminusFloatArray(floatArray) {
-	        let u = new Vector2();
-	        u.y = this.meanFloatArrayFromTo(floatArray, 2, floatArray.length - 1);
-	        u.x = floatArray.length - 2;
-	        return u;
-	    }
-	    static getVplusFloatArray(floatArray) {
-	        let u = new Vector2();
-	        u.y = this.meanFloatArrayFromTo(floatArray, 0, floatArray.length - 3);
-	        u.x = floatArray.length - 2;
-	        return u;
-	    }
-	    static getVFloatArray(floatArray) {
-	        let u = new Vector2();
-	        u.y = this.meanFloatArrayFromTo(floatArray, 1, floatArray.length - 2);
-	        u.x = floatArray.length - 2;
-	        return u;
-	    }
-	    static meanFloatArrayFromTo(floatArray, startIndex, endIndex) {
-	        let amplitude = 0;
-	        let length = floatArray.length - 2;
-	        for (let i = startIndex; i <= endIndex; i++) {
-	            amplitude += floatArray[i];
-	        }
-	        return amplitude / length;
-	    }
-	}
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.default = Vector2;
 
 
 /***/ }

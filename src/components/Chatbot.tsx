@@ -34,7 +34,8 @@ export default class Chatbot extends React.Component<IChatbot, {}> {
 
         this.synthesizer = new SpeechSynthesizer();
         this.synthesizer.setCallbackOnRequests(this.onAudioLoadedDonePlayIt.bind(this));
-        graph.setOutputStream(this.printer.bind(this));        
+        graph.setOutputStream(this.printer.bind(this));    
+        graph.addOutputStreamForUserInputs(this.getUserInput.bind(this));
     }
 
     componentDidMount() {
@@ -55,6 +56,10 @@ export default class Chatbot extends React.Component<IChatbot, {}> {
     onAudioLoadedDonePlayIt(error:any, blob:Blob) {
         if (!error) this.player.playAudio(blob);
         else console.error(error);
+    }
+    
+    getUserInput(input:string) {
+        console.log(input);
     }
 
     printer(input:string) {
