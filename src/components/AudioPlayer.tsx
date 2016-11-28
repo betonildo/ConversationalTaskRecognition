@@ -2,7 +2,7 @@ import * as React from "react";
 import Queue from "../Queue";
 
 interface IAudioPlayer {
-    currentAudioUrl : string;
+
 }
 
 export default class AudioPlayer extends React.Component<IAudioPlayer, {}> {
@@ -10,8 +10,7 @@ export default class AudioPlayer extends React.Component<IAudioPlayer, {}> {
     private audioTagElement : HTMLAudioElement;
     private sourceTagElement : HTMLSourceElement;
     private blobQueue : Queue<Blob>;
-    private timer : NodeJS.Timer;
-     
+    
 
     constructor(arg:any) {
         super(arg);
@@ -52,9 +51,9 @@ export default class AudioPlayer extends React.Component<IAudioPlayer, {}> {
     render() {
 
         return (
-            <div className="AudioPlayer">
+            <div hidden>
                 <audio controls id="audioTag"> 
-                    <source id="voiceTag" src={this.props.currentAudioUrl} type="audio/ogg" />
+                    <source id="voiceTag" type="audio/ogg" />
                 </audio>
             </div>
         )

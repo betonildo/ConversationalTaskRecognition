@@ -5,6 +5,8 @@ import AudioRecorder from "./AudioRecorder";
 import graph from "../GraphConfig";
 import SpeechSynthesizer from "../SpeechSynthesizer";
 
+//TODO: improve conversation history, because it's using a lot of memory. JSArrayData and HTML li list is longer than would be.
+
 // import specific CSS
 require("./Chatbot.css");
 
@@ -16,7 +18,9 @@ export default class Chatbot extends React.Component<IChatbot, {}> {
 
     private inputElement : HTMLInputElement;
     private synthesizer : SpeechSynthesizer;
-    private conversationHistory : HTMLElement;
+    private conversationContent : HTMLElement;
+    private conversationList : HTMLUListElement;
+
     private player : AudioPlayer;
     private recorder : AudioRecorder;
     private static Enter : string = "Enter";
@@ -70,30 +74,63 @@ export default class Chatbot extends React.Component<IChatbot, {}> {
     }
 
     pushToConversation(who:string,what:string) {
+
         this.setState((prevState : IChatbot, props : IChatbot) => {
             prevState.conversations.push(new ChatConversation({who:who, what:what}));
+            // Work around to scrol to the last pushed input.
+            // none of other events worked properly.
+            // after 10 ms, that is a lot of time to insert the last entry, than it scrolls down.
+            // the problem is that a simple call doesn't match the last child inserted and the
+            // scroll doesn't show the last entry, because it will be inserted on DOM after last element in here
+            
             return prevState;
-        });   
+        });
+
+        setTimeout(() => this.scrollConversationToTheBottom(), 10);
+    }
+
+    scrollConversationToTheBottom() {
+        let lastConversationChild = this.conversationList.lastElementChild as HTMLElement;
+
+        if (lastConversationChild) {
+           this.conversationContent.scrollTop = lastConversationChild.offsetTop; 
+        }
     }
 
     render() {
 
         return (
-            <div className="Chatbot">
-                <div className="conversationHistory" ref={(div) => this.conversationHistory = div}>
-                    <ul >
-                        {
-                            this.state.conversations.map((c, i) => {
-                                return <ChatConversation key={i} who={c.props.who} what={c.props.what} />
-                            })
-                        }
-                    </ul>
+            <div className="Container">
+                <header>
+                        Watson Conversational Task Recognition
+                </header>
+
+                <div className="Content">
+
+                    <div className="ContentList" ref={(div) => this.conversationContent = div}>
+                        <div>
+                            <ul ref={(ul) => this.conversationList = ul} >
+                                {this.state.conversations.map((c, i) => {
+                                    return <ChatConversation key={i} who={c.props.who} what={c.props.what} />
+                                })}
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div className="ContentInput"> 
+                        <input  ref={(input) => this.inputElement = input} 
+                                type="text" 
+                                id="inputElement" 
+                                onKeyDown={this.handleOnKeyDown.bind(this)}
+                                placeholder="Enter some command to Watson..."/>
+                    </div>                                      
                 </div>
-                <div className="inputAndOutput">
-                    <input ref={(input) => this.inputElement = input} type="text" id="inputElement" onKeyDown={this.handleOnKeyDown.bind(this)}/>
-                    <AudioPlayer ref={(audioPlayerTag) => this.player = audioPlayerTag} currentAudioUrl=""/>
-                    <AudioRecorder ref={(audioRecorderTag) => this.recorder = audioRecorderTag} />
-                </div>
+                <AudioPlayer ref={(audioPlayerTag) => this.player = audioPlayerTag} />
+                <AudioRecorder ref={(audioRecorderTag) => this.recorder = audioRecorderTag} />
+
+                <canvas name="AudioWaves">
+
+                </canvas>
             </div>
         )
     }

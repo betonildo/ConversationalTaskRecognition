@@ -48,7 +48,7 @@
 	const React = __webpack_require__(1);
 	const ReactDOM = __webpack_require__(2);
 	const Chatbot_1 = __webpack_require__(3);
-	ReactDOM.render(React.createElement(Chatbot_1.default, {conversations: []}), document.getElementById("example"));
+	ReactDOM.render(React.createElement(Chatbot_1.default, {conversations: []}), document.getElementById("Watson"));
 
 
 /***/ },
@@ -72,10 +72,11 @@
 	const ChatConversation_1 = __webpack_require__(4);
 	const AudioPlayer_1 = __webpack_require__(5);
 	const AudioRecorder_1 = __webpack_require__(7);
-	const GraphConfig_1 = __webpack_require__(9);
-	const SpeechSynthesizer_1 = __webpack_require__(16);
+	const GraphConfig_1 = __webpack_require__(10);
+	const SpeechSynthesizer_1 = __webpack_require__(17);
+	//TODO: improve conversation history, because it's using a lot of memory. JSArrayData and HTML li list is longer than would be.
 	// import specific CSS
-	__webpack_require__(18);
+	__webpack_require__(19);
 	class Chatbot extends React.Component {
 	    constructor(props) {
 	        super(props);
@@ -117,20 +118,38 @@
 	    pushToConversation(who, what) {
 	        this.setState((prevState, props) => {
 	            prevState.conversations.push(new ChatConversation_1.default({ who: who, what: what }));
+	            // Work around to scrol to the last pushed input.
+	            // none of other events worked properly.
+	            // after 10 ms, that is a lot of time to insert the last entry, than it scrolls down.
+	            // the problem is that a simple call doesn't match the last child inserted and the
+	            // scroll doesn't show the last entry, because it will be inserted on DOM after last element in here
 	            return prevState;
 	        });
+	        setTimeout(() => this.scrollConversationToTheBottom(), 10);
+	    }
+	    scrollConversationToTheBottom() {
+	        let lastConversationChild = this.conversationList.lastElementChild;
+	        if (lastConversationChild) {
+	            this.conversationContent.scrollTop = lastConversationChild.offsetTop;
+	        }
 	    }
 	    render() {
-	        return (React.createElement("div", {className: "Chatbot"}, 
-	            React.createElement("div", {className: "conversationHistory", ref: (div) => this.conversationHistory = div}, 
-	                React.createElement("ul", null, this.state.conversations.map((c, i) => {
-	                    return React.createElement(ChatConversation_1.default, {key: i, who: c.props.who, what: c.props.what});
-	                }))
-	            ), 
-	            React.createElement("div", {className: "inputAndOutput"}, 
-	                React.createElement("input", {ref: (input) => this.inputElement = input, type: "text", id: "inputElement", onKeyDown: this.handleOnKeyDown.bind(this)}), 
-	                React.createElement(AudioPlayer_1.default, {ref: (audioPlayerTag) => this.player = audioPlayerTag, currentAudioUrl: ""}), 
-	                React.createElement(AudioRecorder_1.default, {ref: (audioRecorderTag) => this.recorder = audioRecorderTag}))));
+	        return (React.createElement("div", {className: "Container"}, 
+	            React.createElement("header", null, "Watson Conversational Task Recognition"), 
+	            React.createElement("div", {className: "Content"}, 
+	                React.createElement("div", {className: "ContentList", ref: (div) => this.conversationContent = div}, 
+	                    React.createElement("div", null, 
+	                        React.createElement("ul", {ref: (ul) => this.conversationList = ul}, this.state.conversations.map((c, i) => {
+	                            return React.createElement(ChatConversation_1.default, {key: i, who: c.props.who, what: c.props.what});
+	                        }))
+	                    )
+	                ), 
+	                React.createElement("div", {className: "ContentInput"}, 
+	                    React.createElement("input", {ref: (input) => this.inputElement = input, type: "text", id: "inputElement", onKeyDown: this.handleOnKeyDown.bind(this), placeholder: "Enter some command to Watson..."})
+	                )), 
+	            React.createElement(AudioPlayer_1.default, {ref: (audioPlayerTag) => this.player = audioPlayerTag}), 
+	            React.createElement(AudioRecorder_1.default, {ref: (audioRecorderTag) => this.recorder = audioRecorderTag}), 
+	            React.createElement("canvas", {name: "AudioWaves"})));
 	    }
 	}
 	Chatbot.Enter = "Enter";
@@ -196,9 +215,9 @@
 	        this.sourceTagElement = this.audioTagElement.getElementsByTagName("source")[0];
 	    }
 	    render() {
-	        return (React.createElement("div", {className: "AudioPlayer"}, 
+	        return (React.createElement("div", {hidden: true}, 
 	            React.createElement("audio", {controls: true, id: "audioTag"}, 
-	                React.createElement("source", {id: "voiceTag", src: this.props.currentAudioUrl, type: "audio/ogg"})
+	                React.createElement("source", {id: "voiceTag", type: "audio/ogg"})
 	            )
 	        ));
 	    }
@@ -249,8 +268,9 @@
 
 	"use strict";
 	const React = __webpack_require__(1);
+	const AudioWave_1 = __webpack_require__(8);
 	const Queue_1 = __webpack_require__(6);
-	const Vector2_1 = __webpack_require__(8);
+	const Vector2_1 = __webpack_require__(9);
 	class AudioRecorder extends React.Component {
 	    constructor(args) {
 	        super(args);
@@ -258,10 +278,11 @@
 	        this.audioRawIndex = 0;
 	        this.listening = false;
 	        this.recordingTime = 0;
+	        this.audioWave = new AudioWave_1.default("AudioWaves");
 	        this.numberOfChannels = 1;
 	        this.frameCount = 0;
-	        window.URL = window.URL || window.webkitURL;
-	        navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+	        window.URL = window.URL;
+	        navigator.getUserMedia = navigator.getUserMedia;
 	        navigator.getUserMedia({ audio: true }, this.successGetUserMediaCallback.bind(this), this.errorGetUserMediaCallback.bind(this));
 	        this.audioBufferQueue = new Queue_1.default();
 	        this.audioRaw = new Float32Array(10000000);
@@ -293,23 +314,42 @@
 	            this.previousFloatArrayData = this.currentFloatArrayData;
 	            this.currentFloatArrayData = event.inputBuffer.getChannelData(0);
 	            if (this.previousFloatArrayData) {
-	                let pitch = this.detectAmountOfPitch(this.previousFloatArrayData, this.currentFloatArrayData);
-	                if (!this.isRecording() && pitch.lower < pitch.higher) {
-	                    this.startRecording();
-	                }
-	                if (this.isRecording() && pitch.lower > pitch.higher || this.recordingTime >= AudioRecorder.MaxRecordTime) {
-	                    this.stopRecording();
-	                }
+	                //let longerRawAudio = this.getLongerValidRawAudioChunk(this.currentFloatArrayData);             
+	                this.audioWave.bufferToShow(this.currentFloatArrayData);
 	            }
 	            this.setMaxRecordTimeFrame();
 	        }
+	    }
+	    getLongerValidRawAudioChunk(audioRaw) {
+	        let searchIndex = 0;
+	        let longerValidRawAudioChunk = new Array();
+	        let currentValidRawAudioChunk = new Array();
+	        let isSearching = true;
+	        while (isSearching) {
+	            searchIndex = this.getNextValidChunk(audioRaw, searchIndex, currentValidRawAudioChunk);
+	            if (currentValidRawAudioChunk.length > longerValidRawAudioChunk.length) {
+	                longerValidRawAudioChunk = currentValidRawAudioChunk.slice();
+	            }
+	            if (searchIndex >= audioRaw.length)
+	                isSearching = false;
+	        }
+	        return new Float32Array(longerValidRawAudioChunk);
+	    }
+	    getNextValidChunk(audioRaw, start, outputValidRawAudioChunk) {
+	        let i = start;
+	        while (i < audioRaw.length && audioRaw[i] < AudioRecorder.THRESHOLD)
+	            i++;
+	        let j = i;
+	        while (j < audioRaw.length && audioRaw[j] > AudioRecorder.THRESHOLD) {
+	            outputValidRawAudioChunk.push(audioRaw[j]);
+	        }
+	        return j;
 	    }
 	    startTimeWatcher() {
 	        this.recordingTime = 0;
 	        this.interval = setInterval(() => {
 	            this.recordingTime++;
-	            console.log(this.recordingTime);
-	            if (this.recordingTime > AudioRecorder.MaxRecordTime)
+	            if (this.recordingTime >= AudioRecorder.MaxRecordTime)
 	                this.recordingTime = 0;
 	        }, 1000);
 	    }
@@ -326,7 +366,6 @@
 	                this.audioRaw[i] = this.currentFloatArrayData[i];
 	            }
 	        }
-	        //console.log(this.audioRawIndex);
 	    }
 	    detectAmountOfPitch(previousChannelData, currentChannelData) {
 	        let V = Vector2_1.default.getVFloatArray(previousChannelData);
@@ -335,18 +374,6 @@
 	        let lower = Vector2_1.default.dot(V, Vminus);
 	        let higher = Vector2_1.default.dot(V, Vplus);
 	        return { lower, higher, V, Vminus, Vplus };
-	    }
-	    startRecording() {
-	        this.recording = true;
-	        console.log('Start Recording!!!');
-	    }
-	    stopRecording() {
-	        this.recording = false;
-	        console.log('Stop Recording!!!');
-	        let audioBufferC = this.audioContext.createBuffer(1, this.audioRawIndex, this.audioContext.sampleRate);
-	        audioBufferC.copyToChannel(this.audioRaw, 0, 0);
-	        console.log(audioBufferC);
-	        this.playAudioBuffer(audioBufferC);
 	    }
 	    playAudioBuffer(audioBuffer) {
 	        let audioBufferSource = this.audioContext.createBufferSource();
@@ -362,29 +389,147 @@
 	            this.playAudioBuffer(audioBuffer);
 	        }
 	    }
-	    isRecording() {
-	        return this.recording;
-	    }
 	    hasMediaStream() {
 	        return !!this.mediaRec;
 	    }
 	    render() {
-	        return (React.createElement("div", null, 
-	            React.createElement("audio", {ref: (audioTag) => this.audioTag = audioTag, controls: true}, 
-	                React.createElement("source", {ref: (sourceTag) => this.sourceTag = sourceTag})
-	            ), 
-	            React.createElement("input", {type: "button", onClick: this.startRecording.bind(this), value: "Start Recording"}), 
-	            React.createElement("input", {type: "button", onClick: this.stopRecording.bind(this), value: "Stop Recording"})));
+	        return (React.createElement("div", {hidden: true}, 
+	            React.createElement("div", null, 
+	                React.createElement("audio", {ref: (audioTag) => this.audioTag = audioTag, controls: true}, 
+	                    React.createElement("source", {ref: (sourceTag) => this.sourceTag = sourceTag})
+	                )
+	            )
+	        ));
 	    }
 	}
 	AudioRecorder.MaxRecordTime = 30;
 	AudioRecorder.PitchThreshold = 1e-10;
+	AudioRecorder.THRESHOLD = -0.00001;
 	Object.defineProperty(exports, "__esModule", { value: true });
 	exports.default = AudioRecorder;
 
 
 /***/ },
 /* 8 */
+/***/ function(module, exports) {
+
+	"use strict";
+	class AudioWave {
+	    constructor(canvasElementName) {
+	        this.maxWaveWidth = 1;
+	        this.maxWaveHeight = 1;
+	        this.currentIndex = 0;
+	        this.visualThreshold = 50;
+	        this.setElementsAndCanvasHandler(canvasElementName);
+	    }
+	    bufferToShow(floatArray) {
+	        this.clearCanvas();
+	        this.drawThresholdLine();
+	        for (let i = 0; i < this.maxWaveWidth && i < floatArray.length; i++) {
+	            let f = floatArray[i] * this.maxWaveHeight;
+	            this.lineShow(f, i);
+	        }
+	    }
+	    lineShow(f, i) {
+	        this.context2d.beginPath();
+	        this.context2d.moveTo(i, 0);
+	        let normalizedValue = f * this.maxWaveHeight;
+	        this.context2d.lineTo(i, normalizedValue);
+	        this.context2d.stroke();
+	        this.context2d.closePath();
+	    }
+	    drawThresholdLine() {
+	        this.context2d.beginPath();
+	        this.context2d.moveTo(0, this.visualThreshold);
+	        this.context2d.lineTo(this.maxWaveWidth, this.visualThreshold);
+	        this.context2d.stroke();
+	        this.context2d.closePath();
+	    }
+	    clearCanvas() {
+	        this.context2d.clearRect(0, 0, this.maxWaveWidth, this.maxWaveHeight * 100);
+	    }
+	    writeWaveFormToCanvasImage(floatArray) {
+	        // request a write to canvas into a web worker
+	        let imageData = this.context2d.getImageData(0, 0, this.maxWaveWidth, this.maxWaveHeight);
+	        // let na = new Array<number>();
+	        let index = 0;
+	        // console.log(imageData.width, "x", imageData.height);
+	        for (let i = 0; i < imageData.height; i++) {
+	            for (let j = 0; j < imageData.width && j < floatArray.length; j++) {
+	                let f = floatArray[j] * this.maxWaveHeight;
+	                if (f <= i) {
+	                    index = i * imageData.width + j;
+	                    // na.push(index);
+	                    imageData.data[index] = 128;
+	                    imageData.data[index + 1] = 128;
+	                    imageData.data[index + 2] = 128;
+	                    imageData.data[index + 3] = 255;
+	                }
+	                else {
+	                    break;
+	                }
+	            }
+	        }
+	        // for(index = 0; index < imageData.data.length; index+=4) {
+	        //     imageData.data[index    ] = 255;
+	        //     imageData.data[index + 1] = 0;
+	        //     imageData.data[index + 2] = 0;
+	        //     imageData.data[index + 3] = 255;
+	        // }
+	        // if (this.s && na.length > 10) {
+	        //     console.log(na);
+	        //     this.s = false;
+	        // }
+	        this.context2d.putImageData(imageData, 0, 0, 0, 0, this.maxWaveWidth, this.maxWaveHeight);
+	    }
+	    // private s = true;
+	    setElementsAndCanvasHandler(canvasElementName) {
+	        this.canvasElement = null;
+	        let timer = setInterval(() => {
+	            let canvasElements = document.getElementsByTagName("canvas");
+	            for (let i = 0; i < canvasElements.length; i++) {
+	                let canvasElement = canvasElements[i];
+	                if (canvasElement) {
+	                    this.canvasElement = canvasElement;
+	                    console.log(canvasElement);
+	                    break;
+	                }
+	            }
+	            if (this.canvasElement) {
+	                this.setInvertalToGetMaxWidthAndHeight();
+	                this.context2d = this.canvasElement.getContext("2d");
+	                this.stardardizeCanvasWidthAndHeight(this.canvasElement);
+	                this.canvasElement.onclick = this.defineThresholdOnClick.bind(this);
+	                clearInterval(timer);
+	            }
+	        }, 100);
+	    }
+	    setInvertalToGetMaxWidthAndHeight() {
+	        setInterval(() => {
+	            this.getMaxImageWidthAndHeigh(this.canvasElement);
+	        }, 1000);
+	    }
+	    getMaxImageWidthAndHeigh(canvasElement) {
+	        this.maxWaveWidth = canvasElement.clientWidth;
+	        this.maxWaveHeight = canvasElement.clientHeight;
+	    }
+	    stardardizeCanvasWidthAndHeight(canvasElement) {
+	        canvasElement.width = canvasElement.clientWidth;
+	        canvasElement.height = canvasElement.clientHeight;
+	    }
+	    defineThresholdOnClick(mv) {
+	        if (mv.isTrusted) {
+	            this.visualThreshold = mv.layerY;
+	            console.log(this.visualThreshold);
+	        }
+	    }
+	}
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = AudioWave;
+
+
+/***/ },
+/* 9 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -440,12 +585,12 @@
 
 
 /***/ },
-/* 9 */
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	const LinkedGraph_1 = __webpack_require__(10);
-	const Knot_1 = __webpack_require__(11);
+	const LinkedGraph_1 = __webpack_require__(11);
+	const Knot_1 = __webpack_require__(12);
 	let printer = console.log || null;
 	let todos = new Array();
 	class String {
@@ -549,7 +694,7 @@
 
 
 /***/ },
-/* 10 */
+/* 11 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -682,11 +827,11 @@
 
 
 /***/ },
-/* 11 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	const Jaccard_1 = __webpack_require__(12);
+	const Jaccard_1 = __webpack_require__(13);
 	let jaccard = new Jaccard_1.default(1);
 	class Knot {
 	    constructor(name) {
@@ -828,12 +973,12 @@
 
 
 /***/ },
-/* 12 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	const Set_1 = __webpack_require__(13);
-	const ShingleBased_1 = __webpack_require__(14);
+	const Set_1 = __webpack_require__(14);
+	const ShingleBased_1 = __webpack_require__(15);
 	class Jaccard extends ShingleBased_1.default {
 	    /**
 	     * The strings are first transformed into sets of k-shingles (sequences of k
@@ -880,7 +1025,7 @@
 
 
 /***/ },
-/* 13 */
+/* 14 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -914,11 +1059,11 @@
 
 
 /***/ },
-/* 14 */
+/* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	const Map_1 = __webpack_require__(15);
+	const Map_1 = __webpack_require__(16);
 	class ShingleBased {
 	    /**
 	     *
@@ -971,7 +1116,7 @@
 
 
 /***/ },
-/* 15 */
+/* 16 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -997,13 +1142,13 @@
 
 
 /***/ },
-/* 16 */
+/* 17 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 	const voices = ["en-US_LisaVoice", "pt-BR_IsabelaVoice", "en-US_MichaelVoice", "en-US_AllisonVoice"];
 	const watsonApiUrl = "https://watson-api-explorer.mybluemix.net/text-to-speech/api/v1/synthesize?accept=audio%2Fogg%3Bcodecs%3Dopus";
-	const Requester_1 = __webpack_require__(17);
+	const Requester_1 = __webpack_require__(18);
 	const Queue_1 = __webpack_require__(6);
 	class SpeechSynthesizer {
 	    constructor() {
@@ -1055,7 +1200,7 @@
 
 
 /***/ },
-/* 17 */
+/* 18 */
 /***/ function(module, exports) {
 
 	/// <reference path="../typings/whatwg-streams/whatwg-streams.d.ts" />
@@ -1079,16 +1224,16 @@
 
 
 /***/ },
-/* 18 */
+/* 19 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 	
 	// load the styles
-	var content = __webpack_require__(19);
+	var content = __webpack_require__(20);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	// add the styles to the DOM
-	var update = __webpack_require__(21)(content, {});
+	var update = __webpack_require__(22)(content, {});
 	if(content.locals) module.exports = content.locals;
 	// Hot Module Replacement
 	if(false) {
@@ -1105,21 +1250,21 @@
 	}
 
 /***/ },
-/* 19 */
+/* 20 */
 /***/ function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(20)();
+	exports = module.exports = __webpack_require__(21)();
 	// imports
 	
 	
 	// module
-	exports.push([module.id, ".Chatbot {\n\n}\n\n.conversationHistory {\n    height: 75%;\n    width: 100%;\n    position: fixed;\n    top:0%;\n    overflow-y: auto;\n    overflow-x: visible;\n    scroll-behavior: smooth;\n    scroll-snap-coordinate: 100%;\n    scroll-snap-points-y: repeat(1);\n}\n\n.inputAndOutput {\n    position: fixed;\n    bottom: 0%;\n    height: 20%;\n}", ""]);
+	exports.push([module.id, "*\r\n{\r\n    padding: 0;\r\n    margin: 0;\r\n    font-family: Arial, Helvetica, sans-serif;\r\n}\r\nhtml, body\r\n{\r\n    height: 100%;\r\n}\r\n\r\nheader, canvas\r\n{\r\n    position: fixed;\r\n    width: 100%;\r\n    background-color: darkorange;\r\n    text-align: center;\r\n}\r\n\r\nheader {\r\n    top: 0px;\r\n    height: 50px;\r\n    font-size: 24px;\r\n    z-index: 1000;\r\n    color: white;\r\n    text-decoration-style: double;\r\n    text-shadow:2px 2px black;\r\n    text-rendering: geometricPrecision;\r\n    text-align: center;\r\n\r\n}\r\n\r\ncanvas {\r\n    bottom: 0px;\r\n    height: 100px;\r\n    cursor: default;\r\n}\r\n\r\n.Container\r\n{\r\n    position: fixed;\r\n    width: 100%;\r\n    height: 100%;\r\n}\r\n\r\n.Content {\r\n    top: 10%;\r\n    width: 400px;\r\n    height: 400px;\r\n    left: calc(50% - 400px + 200px);\r\n    position: fixed;\r\n    overflow-y: hidden;\r\n    overflow-x: visible;\r\n    border-width: 1px;\r\n    border-color: aqua;\r\n    border-radius: 50px;\r\n    border-style: solid;\r\n\r\n    -webkit-box-shadow: 0px 0px 60px 10px rgba(0,0,0,1);\r\n    -moz-box-shadow: 0px 0px 60px 10px rgba(0,0,0,1);\r\n    box-shadow: 0px 0px 60px 10px rgba(0,0,0,1);\r\n}\r\n\r\n.ContentList, .ContentInput {\r\n    position: relative;\r\n    margin-top: 10px;\r\n    width: 300px;\r\n    left: calc(50% - 150px);\r\n} \r\n\r\n.ContentList {\r\n    padding-top: 5%;\r\n    height: 300px;\r\n    top: 0%;\r\n    overflow-y: auto;\r\n    scroll-behavior: smooth;\r\n}\r\n\r\n.ContentInput {\r\n    height: 50px;\r\n    bottom: 0%;\r\n}\r\n\r\n.ContentInput input {\r\n    border-radius: 100px;\r\n    border-width: 1px;\r\n    border-color: white;\r\n    border-style: solid;\r\n    padding: 10px;\r\n\r\n    width: 90%;\r\n}\r\n\r\n\r\n::-webkit-scrollbar {\r\n    width: 12px;\r\n}\r\n \r\n::-webkit-scrollbar-track {\r\n    -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3); \r\n    border-radius: 10px;\r\n}\r\n \r\n::-webkit-scrollbar-thumb {\r\n    border-radius: 10px;\r\n    -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.5); \r\n}", ""]);
 	
 	// exports
 
 
 /***/ },
-/* 20 */
+/* 21 */
 /***/ function(module, exports) {
 
 	/*
@@ -1175,7 +1320,7 @@
 
 
 /***/ },
-/* 21 */
+/* 22 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*
