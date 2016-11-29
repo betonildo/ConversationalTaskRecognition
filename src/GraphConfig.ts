@@ -106,6 +106,49 @@ listTodo.onEntry( (input:string, self:Knot, graph:LinkedGraph, printer:Function)
     graph.goToRoot();
 });
 
+let clearTodos = new Knot("ClearAllTodos");
+let clearTodosTemplates = ["All your todos cleared", "Now you have no todos", "tasks list cleared!"];
+clearTodos.addTemplates(clearTodosTemplates);
+clearTodos.onEntry( (input:string, self:Knot, graph:LinkedGraph, printer:Function) => {
+
+    let template = self.getRandomTemplate().toString();
+    todos = new Array<string>();
+    printer(template);
+    graph.goToRoot();
+});
+
+let eraseOneTask = new Knot("eraseOneTask");
+let eraseOneTaskTemplate = ["Task <TODO> was deleted!", "You don't have to do <TODO> anymore."];
+eraseOneTask.addTemplates(eraseOneTaskTemplate);
+eraseOneTask.onEntry( (input:string, self:Knot, graph:LinkedGraph, printer:Function) => {
+
+    let template = self.getRandomTemplate().toString();
+    
+    let matchesIndex = input.match(/\w*(\d+)/);
+    
+    let response = "";
+
+    try {
+        
+        let taskIndex = parseInt(matchesIndex[1]);
+
+        if (taskIndex < todos.length) {
+            let task = todos[taskIndex];
+            response = template.replace("\"<TODO>\"", task)
+            todos = todos.splice(taskIndex, 1);
+        }
+        else throw "Index don't matches!";
+
+    }
+    catch(e) {
+        //console.
+        response = "No task was removed!";
+    }
+
+    printer(response);
+    graph.goToRoot();
+});
+
 //////////////////////////////////////////////
 
 
@@ -119,7 +162,13 @@ graph.tryLinkKnotsViaWith(kindKnot, "i'm ok today, thanks!", 0.7, kindResponseKn
 graph.tryLinkKnotsViaWith(kindKnot, "awsome, thanks!", 0.7, kindResponseKnot);
 graph.tryLinkKnotsViaWith(kindKnot, "thank you for asking. im good", 0.7, kindResponseKnot);
 graph.tryLinkKnotsViaWith(rootKnot, "mark a task with description", 0.7, markTodo);
+graph.tryLinkKnotsViaWith(rootKnot, "set a to do with description", 0.7, markTodo);
 graph.tryLinkKnotsViaWith(rootKnot, "list my tasks", 0.7, listTodo);
 graph.tryLinkKnotsViaWith(markTodo, "", 0, markTodoWithDescription);
+graph.tryLinkKnotsViaWith(rootKnot, "clear my todos list", 0.7, clearTodos);
+graph.tryLinkKnotsViaWith(rootKnot, "clear my tasks list", 0.7, clearTodos);
+graph.tryLinkKnotsViaWith(rootKnot, "erase one task", 0.7, eraseOneTask);
+graph.tryLinkKnotsViaWith(rootKnot, "remove a task", 0.7, eraseOneTask);
+
 // TODO: set linking between nodes of the tasks
 export default graph;

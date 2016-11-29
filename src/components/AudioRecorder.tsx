@@ -20,27 +20,19 @@ export default class AudioRecorder extends React.Component<IAudioRecorder, {}> {
     private audioTag: HTMLAudioElement;
     private sourceTag: HTMLSourceElement;
     private inputTextTag: HTMLInputElement;
-    private recording: boolean;
     private audioContext: AudioContext;
     private microphone: MediaStreamAudioSourceNode;
     private filter: BiquadFilterNode;
     private recorder: ScriptProcessorNode;
-    private bufferSize = 2048;
     private audioBufferQueue: Queue<AudioBuffer>;
-    private audioRaw: Float32Array;
-    private audioRawIndex = 0;
     private currentFloatArrayData: Float32Array;
     private previousFloatArrayData: Float32Array;
-    private interval: number;
-    private listening = false;
+    public static MaxRecordTime = 10;
+    private audioWave: AudioWave = new AudioWave("AudioWaves");
+    private audioRawIndex = 0;
+    private audioRaw: Float32Array;
     private recordingTime = 0;
-    private static MaxRecordTime = 30;
-    private static PitchThreshold = 1e-10;
-    private canRearFromMic: boolean;
-    private static THRESHOLD = -0.00001;
-
-    private audioWave : AudioWave = new AudioWave("AudioWaves");
-
+    private bufferSize = 1024;
     private numberOfChannels = 1;
     private frameCount = 0;
 
@@ -51,7 +43,7 @@ export default class AudioRecorder extends React.Component<IAudioRecorder, {}> {
         navigator.getUserMedia = navigator.getUserMedia;
         navigator.getUserMedia({ audio: true }, this.successGetUserMediaCallback.bind(this), this.errorGetUserMediaCallback.bind(this));
         this.audioBufferQueue = new Queue<AudioBuffer>();
-        this.audioRaw = new Float32Array(10000000);
+        this.audioRaw = new Float32Array(1024000);
     }
 
     private successGetUserMediaCallback(stream: MediaStream): NavigatorUserMediaSuccessCallback {
@@ -70,15 +62,25 @@ export default class AudioRecorder extends React.Component<IAudioRecorder, {}> {
         this.microphone.connect(this.recorder);
         this.recorder.connect(this.audioContext.destination);
 
-        this.listening = true;
         this.startTimeWatcher();
         return null;
     }
 
     private errorGetUserMediaCallback(mediaError: NavigatorUserMediaError): NavigatorUserMediaErrorCallback {
-        console.log(mediaError);
+        console.error(mediaError);
         this.mediaRec = null;
         return null;
+    }
+
+    private startTimeWatcher() {
+        this.recordingTime = 0;
+        setInterval(() => {
+            this.recordingTime++;
+            this.selectValidSlice();
+            if (this.recordingTime >= AudioRecorder.MaxRecordTime) {
+                this.recordingTime = 0;
+            }
+        }, 1000);
     }
 
     private audioProcessing(event: AudioProcessingEvent) {
@@ -89,57 +91,16 @@ export default class AudioRecorder extends React.Component<IAudioRecorder, {}> {
             this.currentFloatArrayData = event.inputBuffer.getChannelData(0);
 
             if (this.previousFloatArrayData) {
-                //let longerRawAudio = this.getLongerValidRawAudioChunk(this.currentFloatArrayData);             
                 this.audioWave.bufferToShow(this.currentFloatArrayData);
             }
 
             this.setMaxRecordTimeFrame();
+            // this.printHigherNote();
         }
     }
 
-    private getLongerValidRawAudioChunk(audioRaw: Float32Array): Float32Array {
-
-        let searchIndex = 0;
-        let longerValidRawAudioChunk = new Array<number>();
-        let currentValidRawAudioChunk = new Array<number>();
-
-        let isSearching = true;
-        while (isSearching) {
-
-            searchIndex = this.getNextValidChunk(audioRaw, searchIndex, currentValidRawAudioChunk);
-
-            if (currentValidRawAudioChunk.length > longerValidRawAudioChunk.length){
-                longerValidRawAudioChunk = currentValidRawAudioChunk.slice();
-            }   
-
-            if (searchIndex >= audioRaw.length) isSearching = false;
-        }
-
-        return new Float32Array(longerValidRawAudioChunk);
-    }
-
-    private getNextValidChunk(audioRaw: Float32Array, start: number, outputValidRawAudioChunk: Array<number>): number {
-
-        let i = start;
-
-        while (i < audioRaw.length && audioRaw[i] < AudioRecorder.THRESHOLD)
-            i++;
-
-        let j = i;
-        while (j < audioRaw.length && audioRaw[j] > AudioRecorder.THRESHOLD) {
-            outputValidRawAudioChunk.push(audioRaw[j]);
-        }
-
-        return j;
-    }
-
-    private startTimeWatcher() {
-        this.recordingTime = 0;
-        this.interval = setInterval(() => {
-            this.recordingTime++;
-            if (this.recordingTime >= AudioRecorder.MaxRecordTime)
-                this.recordingTime = 0;
-        }, 1000);
+    private hasMediaStream() {
+        return !!this.mediaRec;
     }
 
     private setMaxRecordTimeFrame() {
@@ -151,41 +112,35 @@ export default class AudioRecorder extends React.Component<IAudioRecorder, {}> {
         }
         else {
             this.audioRaw = this.audioRaw.slice(this.currentFloatArrayData.length, this.audioRaw.length);
-            for (let i = this.audioRawIndex - 1; i < this.currentFloatArrayData.length; i++) {
+            for (let i = this.audioRawIndex - this.currentFloatArrayData.length; i < this.currentFloatArrayData.length; i++) {
                 this.audioRaw[i] = this.currentFloatArrayData[i];
             }
         }
     }
 
-    private detectAmountOfPitch(previousChannelData: Float32Array, currentChannelData: Float32Array): { lower: number, higher: number, V: Vector2, Vminus: Vector2, Vplus: Vector2 } {
+    private printHigherNote() {
+        let f = 0;
+        for(let i = 0; i < this.audioRaw.length; i++) {
 
-        let V = Vector2.getVFloatArray(previousChannelData);
-        let Vminus = Vector2.getVminusFloatArray(currentChannelData);
-        let Vplus = Vector2.getVplusFloatArray(currentChannelData);
-        let lower = Vector2.dot(V, Vminus);
-        let higher = Vector2.dot(V, Vplus);
+            let tf = this.audioRaw[i];
 
-        return { lower, higher, V, Vminus, Vplus };
-    }
-
-    private playAudioBuffer(audioBuffer: AudioBuffer) {
-        let audioBufferSource = this.audioContext.createBufferSource();
-        audioBufferSource.buffer = audioBuffer;
-        audioBufferSource.onended = this.onAudioBufferSourceEnded.bind(this);
-        audioBufferSource.connect(this.audioContext.destination);
-        audioBufferSource.start();
-    }
-
-    private onAudioBufferSourceEnded(ev: Event) {
-        if (!this.audioBufferQueue.isEmpty()) {
-            let audioBuffer = this.audioBufferQueue.dequeue();
-            console.log(audioBuffer);
-            this.playAudioBuffer(audioBuffer);
+            if (tf > f) {
+                f = tf;
+            }
         }
+
+        
+        console.log(f);
     }
 
-    private hasMediaStream() {
-        return !!this.mediaRec;
+    private selectValidSlice() {
+        // for(let i = 0; i < this.audioRaw.length; i++) {
+
+        // }
+
+        let v = Vector2.getVFloatArray(this.audioRaw);
+
+        console.log(v);
     }
 
     render() {

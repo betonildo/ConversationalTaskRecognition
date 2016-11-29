@@ -6,7 +6,7 @@ export default class AudioWave {
     private maxWaveHeight : number = 1;
     private currentIndex : number = 0;
     private visualThreshold : number = 50;
-    
+    private halfOfWaveHeight : number;
 
     constructor(canvasElementName:string) {
         this.setElementsAndCanvasHandler(canvasElementName);
@@ -14,6 +14,7 @@ export default class AudioWave {
 
     public bufferToShow(floatArray:Float32Array) {
         
+        this.halfOfWaveHeight = this.maxWaveHeight >> 1;
         this.clearCanvas();
         this.drawThresholdLine();
         for(let i = 0; i < this.maxWaveWidth && i < floatArray.length; i++) {
@@ -24,7 +25,7 @@ export default class AudioWave {
 
     public lineShow(f:number, i:number){
         this.context2d.beginPath();
-        this.context2d.moveTo(i, 0);
+        this.context2d.moveTo(i,  0);
         let normalizedValue = f * this.maxWaveHeight;
         this.context2d.lineTo(i, normalizedValue);
         this.context2d.stroke();
@@ -33,8 +34,9 @@ export default class AudioWave {
 
     public drawThresholdLine() {
         this.context2d.beginPath();
-        this.context2d.moveTo(0, this.visualThreshold);
+        this.context2d.moveTo(70, this.visualThreshold);
         this.context2d.lineTo(this.maxWaveWidth, this.visualThreshold);
+        this.context2d.fillText("THRESHOLD", 0, this.visualThreshold, 100);
         this.context2d.stroke();
         this.context2d.closePath();
     }
@@ -42,57 +44,6 @@ export default class AudioWave {
     public clearCanvas() {
         this.context2d.clearRect(0, 0, this.maxWaveWidth, this.maxWaveHeight * 100);
     }
-
-    private writeWaveFormToCanvasImage(floatArray:Float32Array) {
-        // request a write to canvas into a web worker
-        let imageData = this.context2d.getImageData(0, 0, this.maxWaveWidth, this.maxWaveHeight);
-        
-
-        // let na = new Array<number>();
-        let index = 0;
-        // console.log(imageData.width, "x", imageData.height);
-
-        for(let i = 0; i < imageData.height; i++) {
-            
-            
-            for(let j = 0; j < imageData.width && j < floatArray.length; j++) {
-
-                let f = floatArray[j] * this.maxWaveHeight;
-
-                if (f <= i) {
-                    index = i * imageData.width + j;
-                    // na.push(index);
-                    imageData.data[index    ] = 128;
-                    imageData.data[index + 1] = 128;
-                    imageData.data[index + 2] = 128;
-                    imageData.data[index + 3] = 255;
-                }
-                else {
-                    break;
-                }
-            }
-        }
-
-
-
-        // for(index = 0; index < imageData.data.length; index+=4) {
-
-        //     imageData.data[index    ] = 255;
-        //     imageData.data[index + 1] = 0;
-        //     imageData.data[index + 2] = 0;
-        //     imageData.data[index + 3] = 255;
-        // }
-
-        
-        // if (this.s && na.length > 10) {
-        //     console.log(na);
-        //     this.s = false;
-        // }
-
-        this.context2d.putImageData(imageData, 0, 0, 0, 0, this.maxWaveWidth, this.maxWaveHeight);
-    }
-
-    // private s = true;
 
     private setElementsAndCanvasHandler(canvasElementName:string) {
 
@@ -136,7 +87,7 @@ export default class AudioWave {
         canvasElement.height = canvasElement.clientHeight;
     }
 
-    private defineThresholdOnClick( mv:MouseEvent) {
+    private defineThresholdOnClick(mv:MouseEvent) {
         
         if (mv.isTrusted) {
             this.visualThreshold = mv.layerY;
