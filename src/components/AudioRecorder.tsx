@@ -24,13 +24,13 @@ export default class AudioRecorder extends React.Component<IAudioRecorder, {}> {
     private microphone: MediaStreamAudioSourceNode;
     private filter: BiquadFilterNode;
     private recorder: ScriptProcessorNode;
-    private audioBufferQueue: Queue<AudioBuffer>;
+    private audioBufferQueue = new Queue<AudioBuffer>();
     private currentFloatArrayData: Float32Array;
     private previousFloatArrayData: Float32Array;
     public static MaxRecordTime = 10;
-    private audioWave: AudioWave = new AudioWave("AudioWaves");
+    private audioWave = new AudioWave("AudioWaves");
     private audioRawIndex = 0;
-    private audioRaw: Float32Array;
+    private audioRaw = new Float32Array(2048000);
     private recordingTime = 0;
     private bufferSize = 1024;
     private numberOfChannels = 1;
@@ -39,11 +39,7 @@ export default class AudioRecorder extends React.Component<IAudioRecorder, {}> {
     constructor(args: any) {
 
         super(args);
-        window.URL = window.URL;
-        navigator.getUserMedia = navigator.getUserMedia;
         navigator.getUserMedia({ audio: true }, this.successGetUserMediaCallback.bind(this), this.errorGetUserMediaCallback.bind(this));
-        this.audioBufferQueue = new Queue<AudioBuffer>();
-        this.audioRaw = new Float32Array(1024000);
     }
 
     private successGetUserMediaCallback(stream: MediaStream): NavigatorUserMediaSuccessCallback {
@@ -76,7 +72,6 @@ export default class AudioRecorder extends React.Component<IAudioRecorder, {}> {
         this.recordingTime = 0;
         setInterval(() => {
             this.recordingTime++;
-            this.selectValidSlice();
             if (this.recordingTime >= AudioRecorder.MaxRecordTime) {
                 this.recordingTime = 0;
             }
@@ -95,7 +90,6 @@ export default class AudioRecorder extends React.Component<IAudioRecorder, {}> {
             }
 
             this.setMaxRecordTimeFrame();
-            // this.printHigherNote();
         }
     }
 
@@ -116,31 +110,6 @@ export default class AudioRecorder extends React.Component<IAudioRecorder, {}> {
                 this.audioRaw[i] = this.currentFloatArrayData[i];
             }
         }
-    }
-
-    private printHigherNote() {
-        let f = 0;
-        for(let i = 0; i < this.audioRaw.length; i++) {
-
-            let tf = this.audioRaw[i];
-
-            if (tf > f) {
-                f = tf;
-            }
-        }
-
-        
-        console.log(f);
-    }
-
-    private selectValidSlice() {
-        // for(let i = 0; i < this.audioRaw.length; i++) {
-
-        // }
-
-        let v = Vector2.getVFloatArray(this.audioRaw);
-
-        console.log(v);
     }
 
     render() {

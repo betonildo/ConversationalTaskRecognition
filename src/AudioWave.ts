@@ -6,7 +6,6 @@ export default class AudioWave {
     private maxWaveHeight : number = 1;
     private currentIndex : number = 0;
     private visualThreshold : number = 50;
-    private halfOfWaveHeight : number;
 
     constructor(canvasElementName:string) {
         this.setElementsAndCanvasHandler(canvasElementName);
@@ -14,16 +13,18 @@ export default class AudioWave {
 
     public bufferToShow(floatArray:Float32Array) {
         
-        this.halfOfWaveHeight = this.maxWaveHeight >> 1;
-        this.clearCanvas();
-        this.drawThresholdLine();
-        for(let i = 0; i < this.maxWaveWidth && i < floatArray.length; i++) {
-            let f = floatArray[i] * this.maxWaveHeight;
-            this.lineShow(f, i);
+        if (this.canvasElement) {
+
+            this.clearCanvas();
+            this.drawThresholdLine();
+            for(let i = 0; i < this.maxWaveWidth && i < floatArray.length; i++) {
+                let f = floatArray[i] * this.maxWaveHeight;
+                this.lineShow(f, i);
+            }
         }
     }
 
-    public lineShow(f:number, i:number){
+    public lineShow(f:number, i:number) {
         this.context2d.beginPath();
         this.context2d.moveTo(i,  0);
         let normalizedValue = f * this.maxWaveHeight;
@@ -42,7 +43,7 @@ export default class AudioWave {
     }
 
     public clearCanvas() {
-        this.context2d.clearRect(0, 0, this.maxWaveWidth, this.maxWaveHeight * 100);
+        this.context2d.clearRect(0, 0, this.maxWaveWidth, this.maxWaveHeight);
     }
 
     private setElementsAndCanvasHandler(canvasElementName:string) {
@@ -53,7 +54,8 @@ export default class AudioWave {
             let canvasElements = document.getElementsByTagName("canvas") as NodeListOf<HTMLCanvasElement>;
             for(let i = 0; i < canvasElements.length; i++) {
                 let canvasElement = canvasElements[i];
-                if (canvasElement) {
+                
+                if (canvasElement && canvasElement.getAttribute("name") === canvasElementName) {
                     this.canvasElement = canvasElement;
                     console.log(canvasElement);
                     break; 
@@ -88,11 +90,6 @@ export default class AudioWave {
     }
 
     private defineThresholdOnClick(mv:MouseEvent) {
-        
-        if (mv.isTrusted) {
-            this.visualThreshold = mv.layerY;
-            console.log(this.visualThreshold);
-        }
+        if (mv.isTrusted) this.visualThreshold = mv.layerY;
     }
-
 }

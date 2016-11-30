@@ -270,21 +270,18 @@
 	const React = __webpack_require__(1);
 	const AudioWave_1 = __webpack_require__(8);
 	const Queue_1 = __webpack_require__(6);
-	const Vector2_1 = __webpack_require__(9);
 	class AudioRecorder extends React.Component {
 	    constructor(args) {
 	        super(args);
+	        this.audioBufferQueue = new Queue_1.default();
 	        this.audioWave = new AudioWave_1.default("AudioWaves");
 	        this.audioRawIndex = 0;
+	        this.audioRaw = new Float32Array(2048000);
 	        this.recordingTime = 0;
 	        this.bufferSize = 1024;
 	        this.numberOfChannels = 1;
 	        this.frameCount = 0;
-	        window.URL = window.URL;
-	        navigator.getUserMedia = navigator.getUserMedia;
 	        navigator.getUserMedia({ audio: true }, this.successGetUserMediaCallback.bind(this), this.errorGetUserMediaCallback.bind(this));
-	        this.audioBufferQueue = new Queue_1.default();
-	        this.audioRaw = new Float32Array(1024000);
 	    }
 	    successGetUserMediaCallback(stream) {
 	        this.mediaRec = stream;
@@ -311,7 +308,6 @@
 	        this.recordingTime = 0;
 	        setInterval(() => {
 	            this.recordingTime++;
-	            this.selectValidSlice();
 	            if (this.recordingTime >= AudioRecorder.MaxRecordTime) {
 	                this.recordingTime = 0;
 	            }
@@ -344,22 +340,6 @@
 	            }
 	        }
 	    }
-	    printHigherNote() {
-	        let f = 0;
-	        for (let i = 0; i < this.audioRaw.length; i++) {
-	            let tf = this.audioRaw[i];
-	            if (tf > f) {
-	                f = tf;
-	            }
-	        }
-	        console.log(f);
-	    }
-	    selectValidSlice() {
-	        // for(let i = 0; i < this.audioRaw.length; i++) {
-	        // }
-	        let v = Vector2_1.default.getVFloatArray(this.audioRaw);
-	        console.log(v);
-	    }
 	    render() {
 	        return (React.createElement("div", {hidden: true}, 
 	            React.createElement("div", null, 
@@ -389,12 +369,13 @@
 	        this.setElementsAndCanvasHandler(canvasElementName);
 	    }
 	    bufferToShow(floatArray) {
-	        this.halfOfWaveHeight = this.maxWaveHeight >> 1;
-	        this.clearCanvas();
-	        this.drawThresholdLine();
-	        for (let i = 0; i < this.maxWaveWidth && i < floatArray.length; i++) {
-	            let f = floatArray[i] * this.maxWaveHeight;
-	            this.lineShow(f, i);
+	        if (this.canvasElement) {
+	            this.clearCanvas();
+	            this.drawThresholdLine();
+	            for (let i = 0; i < this.maxWaveWidth && i < floatArray.length; i++) {
+	                let f = floatArray[i] * this.maxWaveHeight;
+	                this.lineShow(f, i);
+	            }
 	        }
 	    }
 	    lineShow(f, i) {
@@ -414,7 +395,7 @@
 	        this.context2d.closePath();
 	    }
 	    clearCanvas() {
-	        this.context2d.clearRect(0, 0, this.maxWaveWidth, this.maxWaveHeight * 100);
+	        this.context2d.clearRect(0, 0, this.maxWaveWidth, this.maxWaveHeight);
 	    }
 	    setElementsAndCanvasHandler(canvasElementName) {
 	        this.canvasElement = null;
@@ -422,7 +403,7 @@
 	            let canvasElements = document.getElementsByTagName("canvas");
 	            for (let i = 0; i < canvasElements.length; i++) {
 	                let canvasElement = canvasElements[i];
-	                if (canvasElement) {
+	                if (canvasElement && canvasElement.getAttribute("name") === canvasElementName) {
 	                    this.canvasElement = canvasElement;
 	                    console.log(canvasElement);
 	                    break;
@@ -451,10 +432,8 @@
 	        canvasElement.height = canvasElement.clientHeight;
 	    }
 	    defineThresholdOnClick(mv) {
-	        if (mv.isTrusted) {
+	        if (mv.isTrusted)
 	            this.visualThreshold = mv.layerY;
-	            console.log(this.visualThreshold);
-	        }
 	    }
 	}
 	Object.defineProperty(exports, "__esModule", { value: true });
@@ -462,62 +441,7 @@
 
 
 /***/ },
-/* 9 */
-/***/ function(module, exports) {
-
-	"use strict";
-	class Vector2 {
-	    static dot(u, v) {
-	        return u.x * v.x + u.y * v.y;
-	    }
-	    normalize() {
-	        let norm = this.magnitude();
-	        let u = this.clone();
-	        u.x = Math.abs(u.x / norm);
-	        u.y = Math.abs(u.y / norm);
-	        return u;
-	    }
-	    magnitude() {
-	        return Math.sqrt(this.x * this.x + this.y * this.y);
-	    }
-	    clone() {
-	        let u = new Vector2();
-	        u.x = this.x;
-	        u.y = this.y;
-	        return u;
-	    }
-	    static getVminusFloatArray(floatArray) {
-	        let u = new Vector2();
-	        u.y = this.meanFloatArrayFromTo(floatArray, 2, floatArray.length - 1);
-	        u.x = floatArray.length - 2;
-	        return u;
-	    }
-	    static getVplusFloatArray(floatArray) {
-	        let u = new Vector2();
-	        u.y = this.meanFloatArrayFromTo(floatArray, 0, floatArray.length - 3);
-	        u.x = floatArray.length - 2;
-	        return u;
-	    }
-	    static getVFloatArray(floatArray) {
-	        let u = new Vector2();
-	        u.y = this.meanFloatArrayFromTo(floatArray, 1, floatArray.length - 2);
-	        u.x = floatArray.length - 2;
-	        return u;
-	    }
-	    static meanFloatArrayFromTo(floatArray, startIndex, endIndex) {
-	        let amplitude = 0;
-	        let length = floatArray.length - 2;
-	        for (let i = startIndex; i <= endIndex; i++) {
-	            amplitude += floatArray[i];
-	        }
-	        return amplitude / length;
-	    }
-	}
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.default = Vector2;
-
-
-/***/ },
+/* 9 */,
 /* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -619,7 +543,7 @@
 	    graph.goToRoot();
 	});
 	let eraseOneTask = new Knot_1.default("eraseOneTask");
-	let eraseOneTaskTemplate = ["Task <TODO> was deleted!", "You don't have to do <TODO> anymore."];
+	let eraseOneTaskTemplate = ["Task \"<TODO>\" was deleted!", "You don't have to <TODO> anymore."];
 	eraseOneTask.addTemplates(eraseOneTaskTemplate);
 	eraseOneTask.onEntry((input, self, graph, printer) => {
 	    let template = self.getRandomTemplate().toString();
@@ -629,7 +553,7 @@
 	        let taskIndex = parseInt(matchesIndex[1]);
 	        if (taskIndex < todos.length) {
 	            let task = todos[taskIndex];
-	            response = template.replace("\"<TODO>\"", task);
+	            response = template.replace("<TODO>", task);
 	            todos = todos.splice(taskIndex, 1);
 	        }
 	        else

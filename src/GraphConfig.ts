@@ -118,7 +118,7 @@ clearTodos.onEntry( (input:string, self:Knot, graph:LinkedGraph, printer:Functio
 });
 
 let eraseOneTask = new Knot("eraseOneTask");
-let eraseOneTaskTemplate = ["Task <TODO> was deleted!", "You don't have to do <TODO> anymore."];
+let eraseOneTaskTemplate = ["Task \"<TODO>\" was deleted!", "You don't have to <TODO> anymore."];
 eraseOneTask.addTemplates(eraseOneTaskTemplate);
 eraseOneTask.onEntry( (input:string, self:Knot, graph:LinkedGraph, printer:Function) => {
 
@@ -134,7 +134,7 @@ eraseOneTask.onEntry( (input:string, self:Knot, graph:LinkedGraph, printer:Funct
 
         if (taskIndex < todos.length) {
             let task = todos[taskIndex];
-            response = template.replace("\"<TODO>\"", task)
+            response = template.replace("<TODO>", task);
             todos = todos.splice(taskIndex, 1);
         }
         else throw "Index don't matches!";
